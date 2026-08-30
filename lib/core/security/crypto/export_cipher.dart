@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 
-/// Thrown when decrypting an export fails — either the passcode was wrong
+/// Thrown when decrypting an export fails — either the passphrase was wrong
 /// or the file was corrupted/tampered with (the AES-GCM auth tag no longer
 /// matches).
 class ExportDecryptionException implements Exception {
@@ -66,20 +66,13 @@ class EncryptedExportBlob {
   String encodePretty() => const JsonEncoder.withIndent('  ').convert(toJson());
 }
 
-/// Encrypts/decrypts the export file using a passcode-derived key
+/// Encrypts/decrypts the export file using a passphrase-derived key
 /// (Argon2id) that is entirely separate from the device's own Hive Keystore
 /// key — this is what makes an export portable to a new device.
-///
-/// The passcode is a short numeric code (4-10 digits, enforced by the UI)
-/// rather than a free-form passphrase, so it has far less entropy than a
-/// typical password — a 4-digit code is only 10,000 possibilities. The KDF
-/// cost below is set high specifically to compensate: it can't turn a weak
-/// passcode into a strong one, but it does make offline brute-forcing the
-/// exported file meaningfully slower than it would be against a fast hash.
 class ExportCipher {
   const ExportCipher({
-    this.memory = 65536, // 64 MiB
-    this.iterations = 3,
+    this.memory = 19456, // ~19 MB, OWASP-recommended Argon2id baseline
+    this.iterations = 2,
     this.parallelism = 1,
   });
 
@@ -95,11 +88,11 @@ class ExportCipher {
 
   Future<EncryptedExportBlob> encrypt({
     required List<int> plainText,
-    required String passcode,
+    required String passphrase,
   }) async {
     final salt = _randomBytes(_saltLength);
     final secretKey = await _deriveKey(
-      passcode: passcode,
+      passphrase: passphrase,
       salt: salt,
       memory: memory,
       iterations: iterations,
@@ -123,7 +116,7 @@ class ExportCipher {
 
   Future<List<int>> decrypt({
     required EncryptedExportBlob blob,
-    required String passcode,
+    required String passphrase,
   }) async {
     if (blob.kdf != _kdfName || blob.cipher != _cipherName) {
       throw const ExportDecryptionException(
@@ -133,7 +126,7 @@ class ExportCipher {
 
     final salt = base64Decode(blob.saltBase64);
     final secretKey = await _deriveKey(
-      passcode: passcode,
+      passphrase: passphrase,
       salt: salt,
       memory: blob.memory,
       iterations: blob.iterations,
@@ -152,13 +145,13 @@ class ExportCipher {
       return await aesGcm.decrypt(secretBox, secretKey: secretKey);
     } on SecretBoxAuthenticationError {
       throw const ExportDecryptionException(
-        'Incorrect passcode or corrupted file.',
+        'Incorrect passphrase or corrupted file.',
       );
     }
   }
 
   Future<SecretKey> _deriveKey({
-    required String passcode,
+    required String passphrase,
     required List<int> salt,
     required int memory,
     required int iterations,
@@ -171,7 +164,7 @@ class ExportCipher {
       hashLength: _keyLength,
     );
     return argon2id.deriveKey(
-      secretKey: SecretKey(utf8.encode(passcode)),
+      secretKey: SecretKey(utf8.encode(passphrase)),
       nonce: salt,
     );
   }
