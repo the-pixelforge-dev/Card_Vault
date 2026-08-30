@@ -336,7 +336,29 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ListTile(
                   leading: const Icon(Icons.timer_outlined),
-                  title: const Text('Auto-lock after'),
+                  title: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Auto-lock after'),
+                      const SizedBox(width: 4),
+                      Tooltip(
+                        message:
+                            'How long Card Vault can sit in the background '
+                            'before you have to unlock it again. '
+                            '"Immediately" locks the instant you leave — '
+                            'even a quick glance at another app. A longer '
+                            'setting gives you a grace period to switch '
+                            'apps and come right back without unlocking '
+                            'again.',
+                        triggerMode: TooltipTriggerMode.tap,
+                        child: Icon(
+                          Icons.help_outline_rounded,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                   trailing: DropdownButton<int>(
                     value: settings.autoLockAfterSeconds,
                     items: const [

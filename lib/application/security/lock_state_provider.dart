@@ -67,6 +67,14 @@ class AppLock extends _$AppLock {
   void lock() => state = true;
 
   void notifyBackgrounded() {
+    // Showing the native biometric prompt itself briefly sends the app
+    // through inactive/paused and back (Android treats that system
+    // overlay as a lifecycle transition) — while already locked, that
+    // blip must not overwrite the timestamp used to decide whether to
+    // re-lock, or a correct-PIN/successful-biometric unlock gets
+    // immediately re-locked by its own unlock attempt (most visible with
+    // "Immediately", where any elapsed time at all triggers a re-lock).
+    if (state) return;
     _backgroundedAt = DateTime.now();
   }
 
