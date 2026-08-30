@@ -1,0 +1,56 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'settings_hive_model.dart';
+
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
+
+class AppSettingsHiveModelAdapter extends TypeAdapter<AppSettingsHiveModel> {
+  @override
+  final typeId = 3;
+
+  @override
+  AppSettingsHiveModel read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return AppSettingsHiveModel(
+      themeMode: fields[0] == null ? 'system' : fields[0] as String,
+      uiScaleFactor: fields[1] == null ? 1.0 : (fields[1] as num).toDouble(),
+      activeFontFamily: fields[2] as String?,
+      importedFonts: (fields[3] as List?)?.cast<ImportedFontHiveModel>(),
+      biometricLockEnabled: fields[4] == null ? false : fields[4] as bool,
+      autoLockAfterSeconds: fields[5] == null ? 30 : (fields[5] as num).toInt(),
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, AppSettingsHiveModel obj) {
+    writer
+      ..writeByte(6)
+      ..writeByte(0)
+      ..write(obj.themeMode)
+      ..writeByte(1)
+      ..write(obj.uiScaleFactor)
+      ..writeByte(2)
+      ..write(obj.activeFontFamily)
+      ..writeByte(3)
+      ..write(obj.importedFonts)
+      ..writeByte(4)
+      ..write(obj.biometricLockEnabled)
+      ..writeByte(5)
+      ..write(obj.autoLockAfterSeconds);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AppSettingsHiveModelAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
