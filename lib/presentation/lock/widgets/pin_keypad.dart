@@ -32,28 +32,39 @@ class PinKeypad extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: row.map((key) {
                 if (key.isEmpty) {
-                  return const SizedBox(width: 72, height: 64);
+                  // Matches a real button's total footprint (width +
+                  // horizontal padding) so columns stay aligned.
+                  return const SizedBox(width: 100, height: 64);
                 }
                 final isBackspace = key == '⌫';
-                return SizedBox(
-                  width: 72,
-                  height: 64,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(36),
-                      onTap: () {
-                        ref.read(hapticsServiceProvider).selectionClick();
-                        if (isBackspace) {
-                          onBackspace();
-                        } else {
-                          onDigit(key);
-                        }
-                      },
-                      child: Center(
-                        child: isBackspace
-                            ? const Icon(Icons.backspace_outlined)
-                            : Text(key, style: const TextStyle(fontSize: 24)),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
+                  child: SizedBox(
+                    width: 72,
+                    height: 64,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(36),
+                        onTap: () {
+                          ref.read(hapticsServiceProvider).selectionClick();
+                          if (isBackspace) {
+                            onBackspace();
+                          } else {
+                            onDigit(key);
+                          }
+                        },
+                        child: Center(
+                          child: isBackspace
+                              ? const Icon(Icons.backspace_outlined)
+                              : Text(
+                                  key,
+                                  style: const TextStyle(fontSize: 24),
+                                ),
+                        ),
                       ),
                     ),
                   ),
