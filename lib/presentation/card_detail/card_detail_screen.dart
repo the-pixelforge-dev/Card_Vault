@@ -110,12 +110,21 @@ class CardDetailScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           if (card.rewardsText.isNotEmpty)
-            _DetailSection(title: 'Rewards', body: card.rewardsText),
+            _DetailSection(
+              title: 'Rewards',
+              icon: Icons.card_giftcard_outlined,
+              body: card.rewardsText,
+            ),
           if (card.bestForText.isNotEmpty)
-            _DetailSection(title: 'Best For', body: card.bestForText),
+            _DetailSection(
+              title: 'Best For',
+              icon: Icons.thumb_up_outlined,
+              body: card.bestForText,
+            ),
           if (card.customFields.isNotEmpty)
             _DetailSection(
               title: 'Details',
+              icon: Icons.list_alt_outlined,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: card.customFields.entries
@@ -139,6 +148,7 @@ class CardDetailScreen extends ConsumerWidget {
           if (links.isNotEmpty)
             _DetailSection(
               title: 'Links',
+              icon: Icons.link_rounded,
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -156,6 +166,7 @@ class CardDetailScreen extends ConsumerWidget {
           if (cardGroups.isNotEmpty)
             _DetailSection(
               title: 'Groups',
+              icon: Icons.label_outline,
               child: Wrap(
                 spacing: 8,
                 children: cardGroups
@@ -164,7 +175,11 @@ class CardDetailScreen extends ConsumerWidget {
               ),
             ),
           if (card.notes.isNotEmpty)
-            _DetailSection(title: 'Notes', body: card.notes),
+            _DetailSection(
+              title: 'Notes',
+              icon: Icons.notes_outlined,
+              body: card.notes,
+            ),
         ],
       ),
     );
@@ -172,30 +187,52 @@ class CardDetailScreen extends ConsumerWidget {
 }
 
 class _DetailSection extends StatelessWidget {
-  const _DetailSection({required this.title, this.body, this.child})
-    : assert(body != null || child != null);
+  const _DetailSection({
+    required this.title,
+    required this.icon,
+    this.body,
+    this.child,
+  }) : assert(body != null || child != null);
 
   final String title;
+  final IconData icon;
   final String? body;
   final Widget? child;
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: Theme.of(context).colorScheme.primary,
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: colorScheme.primaryContainer.withValues(alpha: 0.28),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 18, color: colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          child ?? Text(body!),
-        ],
+            const SizedBox(height: 10),
+            child ?? Text(body!),
+          ],
+        ),
       ),
     );
   }

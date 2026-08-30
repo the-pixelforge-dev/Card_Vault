@@ -26,13 +26,15 @@ class AppSettingsHiveModelAdapter extends TypeAdapter<AppSettingsHiveModel> {
       biometricUnlockEnabled: fields[6] == null ? false : fields[6] as bool,
       themeSeedColorArgb: (fields[7] as num?)?.toInt(),
       defaultCardholderName: fields[8] as String?,
+      hapticsEnabled: fields[9] == null ? true : fields[9] as bool,
+      hapticsStrength: fields[10] == null ? 'medium' : fields[10] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettingsHiveModel obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.themeMode)
       ..writeByte(1)
@@ -50,7 +52,11 @@ class AppSettingsHiveModelAdapter extends TypeAdapter<AppSettingsHiveModel> {
       ..writeByte(7)
       ..write(obj.themeSeedColorArgb)
       ..writeByte(8)
-      ..write(obj.defaultCardholderName);
+      ..write(obj.defaultCardholderName)
+      ..writeByte(9)
+      ..write(obj.hapticsEnabled)
+      ..writeByte(10)
+      ..write(obj.hapticsStrength);
   }
 
   @override

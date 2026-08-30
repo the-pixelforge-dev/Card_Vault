@@ -10,6 +10,7 @@ import '../../core/network_detection/card_network_detector.dart';
 import '../../domain/card/card_entity.dart';
 import '../../domain/card/card_network.dart';
 import '../../domain/card/card_type.dart';
+import '../../domain/card/card_validator.dart';
 import '../../domain/card/cvv_validator.dart';
 import '../../domain/card/expiry_validator.dart';
 import '../../domain/card/luhn_validator.dart';
@@ -170,7 +171,15 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
       updatedAt: now,
     );
 
-    await ref.read(cardListProvider.notifier).upsert(card);
+    try {
+      await ref.read(cardListProvider.notifier).upsert(card);
+    } on CardValidationException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(e.toString())));
+      return;
+    }
     if (mounted) Navigator.of(context).pop();
   }
 

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../application/settings/haptics_provider.dart';
 
 /// A simple 0-9 + backspace numeric keypad used for both setting and
 /// entering the app PIN.
-class PinKeypad extends StatelessWidget {
+class PinKeypad extends ConsumerWidget {
   const PinKeypad({
     super.key,
     required this.onDigit,
@@ -14,7 +16,7 @@ class PinKeypad extends StatelessWidget {
   final VoidCallback onBackspace;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     const layout = [
       ['1', '2', '3'],
       ['4', '5', '6'],
@@ -41,7 +43,7 @@ class PinKeypad extends StatelessWidget {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(36),
                       onTap: () {
-                        HapticFeedback.selectionClick();
+                        ref.read(hapticsServiceProvider).selectionClick();
                         if (isBackspace) {
                           onBackspace();
                         } else {

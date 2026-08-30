@@ -1,23 +1,25 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../application/settings/haptics_provider.dart';
 
 /// A hand-rolled 3D perspective flip between [front] and [back]. Swap
 /// happens at the halfway point of the rotation so each face is only ever
 /// shown right-reading (the back is pre-mirrored so it isn't shown
 /// backwards while rotating past 90 degrees).
-class FlipCardWidget extends StatefulWidget {
+class FlipCardWidget extends ConsumerStatefulWidget {
   const FlipCardWidget({super.key, required this.front, required this.back});
 
   final Widget front;
   final Widget back;
 
   @override
-  State<FlipCardWidget> createState() => FlipCardWidgetState();
+  ConsumerState<FlipCardWidget> createState() => FlipCardWidgetState();
 }
 
-class FlipCardWidgetState extends State<FlipCardWidget>
+class FlipCardWidgetState extends ConsumerState<FlipCardWidget>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
@@ -28,7 +30,7 @@ class FlipCardWidgetState extends State<FlipCardWidget>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 550),
+      duration: const Duration(milliseconds: 300),
     );
   }
 
@@ -39,7 +41,7 @@ class FlipCardWidgetState extends State<FlipCardWidget>
   }
 
   void flip() {
-    HapticFeedback.lightImpact();
+    ref.read(hapticsServiceProvider).lightImpact();
     if (isShowingFront) {
       _controller.forward();
     } else {

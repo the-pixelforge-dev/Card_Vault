@@ -34,17 +34,45 @@ class _DefaultCardholderNameFieldState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: TextField(
-        controller: _controller,
-        decoration: const InputDecoration(
-          labelText: 'Default cardholder name',
-          hintText: 'Pre-fills new cards — you can still change it',
-        ),
-        onChanged: (value) => ref
-            .read(settingsProvider.notifier)
-            .setDefaultCardholderName(value.trim().isEmpty ? null : value),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Default cardholder name',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Tooltip(
+                message:
+                    'Pre-fills new cards — you can still change it '
+                    'any time.',
+                triggerMode: TooltipTriggerMode.tap,
+                child: Icon(
+                  Icons.help_outline_rounded,
+                  size: 16,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _controller,
+            onChanged: (value) => ref
+                .read(settingsProvider.notifier)
+                .setDefaultCardholderName(
+                  value.trim().isEmpty ? null : value,
+                ),
+          ),
+        ],
       ),
     );
   }

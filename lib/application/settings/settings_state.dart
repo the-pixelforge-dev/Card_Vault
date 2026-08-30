@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/haptics/haptics_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/settings/imported_font_hive_model.dart';
 import '../../data/settings/settings_hive_model.dart';
@@ -16,6 +17,8 @@ class SettingsState {
     required this.biometricUnlockEnabled,
     required this.themeSeedColorArgb,
     required this.defaultCardholderName,
+    required this.hapticsEnabled,
+    required this.hapticsStrength,
   });
 
   factory SettingsState.fromHiveModel(AppSettingsHiveModel m) {
@@ -29,6 +32,8 @@ class SettingsState {
       biometricUnlockEnabled: m.biometricUnlockEnabled,
       themeSeedColorArgb: m.themeSeedColorArgb,
       defaultCardholderName: m.defaultCardholderName,
+      hapticsEnabled: m.hapticsEnabled,
+      hapticsStrength: HapticsStrength.values.byName(m.hapticsStrength),
     );
   }
 
@@ -41,6 +46,8 @@ class SettingsState {
   final bool biometricUnlockEnabled;
   final int? themeSeedColorArgb;
   final String? defaultCardholderName;
+  final bool hapticsEnabled;
+  final HapticsStrength hapticsStrength;
 
   /// The display name shown in Settings for the active font — the bundled
   /// family name itself, or the human-readable name of an imported font
@@ -64,6 +71,8 @@ class SettingsState {
     biometricUnlockEnabled: biometricUnlockEnabled,
     themeSeedColorArgb: themeSeedColorArgb,
     defaultCardholderName: defaultCardholderName,
+    hapticsEnabled: hapticsEnabled,
+    hapticsStrength: hapticsStrength.name,
   );
 
   SettingsState copyWith({
@@ -76,6 +85,8 @@ class SettingsState {
     bool? biometricUnlockEnabled,
     int? Function()? themeSeedColorArgb,
     String? Function()? defaultCardholderName,
+    bool? hapticsEnabled,
+    HapticsStrength? hapticsStrength,
   }) {
     return SettingsState(
       themeMode: themeMode ?? this.themeMode,
@@ -95,6 +106,8 @@ class SettingsState {
       defaultCardholderName: defaultCardholderName != null
           ? defaultCardholderName()
           : this.defaultCardholderName,
+      hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
+      hapticsStrength: hapticsStrength ?? this.hapticsStrength,
     );
   }
 }

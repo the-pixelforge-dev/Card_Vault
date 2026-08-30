@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/cards/card_list_provider.dart';
+import '../../../application/settings/haptics_provider.dart';
 import '../../../domain/card/card_entity.dart';
 import '../../widgets_shared/digital_card_widget.dart';
 import 'hollow_card_empty_state.dart';
@@ -47,6 +47,22 @@ class _CardStackViewState extends ConsumerState<CardStackView>
 
   int _browseRotation = 0;
   double _cycleAccumulator = 0;
+
+  /// The card whose gesture recognizer is currently tracking an in-progress
+  /// browse drag, captured at drag-start and held fixed until drag-end.
+  ///
+  /// This card visually cycles to the back mid-gesture (its `depth` keeps
+  /// changing as `_browseRotation` advances), but the SAME underlying
+  /// Flutter Element must keep receiving the drag's update/end callbacks —
+  /// if wiring were re-derived from "is this card at depth 0" on every
+  /// rebuild, the card that started the gesture would go from depth 0 to
+  /// depth 1 after the first cycle, its callbacks would flip to null, and
+  /// the rest of the same continuous drag would silently go nowhere (which
+  /// is exactly what "cycling only moves one card no matter how far I
+  /// drag" looks like). Keying ownership to the card id instead of the
+  /// depth keeps the same Element — and therefore the same live
+  /// recognizer — wired for the whole gesture.
+  String? _browsingCardId;
   String? _draggingId;
   Offset _dragDelta = Offset.zero;
   List<String>? _previousCardIds;
@@ -69,8 +85,9 @@ class _CardStackViewState extends ConsumerState<CardStackView>
     _previousCardIds = ids;
   }
 
-  void _onBrowseDragStart() {
+  void _onBrowseDragStart(String cardId) {
     _cycleAccumulator = 0;
+    _browsingCardId = cardId;
   }
 
   void _onBrowseDragUpdate(DragUpdateDetails details) {
@@ -92,10 +109,11 @@ class _CardStackViewState extends ConsumerState<CardStackView>
 
   void _onBrowseDragEnd(DragEndDetails details) {
     _cycleAccumulator = 0;
+    setState(() => _browsingCardId = null);
   }
 
   void _cycleStack(int steps) {
-    HapticFeedback.selectionClick();
+    ref.read(hapticsServiceProvider).selectionClick();
     setState(() {
       _browseRotation =
           (_browseRotation + steps) % widget.cards.length;
@@ -103,12 +121,12 @@ class _CardStackViewState extends ConsumerState<CardStackView>
   }
 
   void _onTapFront(CardEntity card) {
-    HapticFeedback.selectionClick();
+    ref.read(hapticsServiceProvider).selectionClick();
     widget.onOpenCard(card);
   }
 
   void _beginDrag(String id) {
-    HapticFeedback.mediumImpact();
+    ref.read(hapticsServiceProvider).mediumImpact();
     setState(() {
       _draggingId = id;
       _dragDelta = Offset.zero;
@@ -133,7 +151,7 @@ class _CardStackViewState extends ConsumerState<CardStackView>
     });
 
     if (targetIndex != currentIndex) {
-      HapticFeedback.mediumImpact();
+      ref.read(hapticsServiceProvider).mediumImpact();
       final reordered = [...order];
       final moved = reordered.removeAt(currentIndex);
       reordered.insert(targetIndex, moved);
@@ -142,7 +160,7 @@ class _CardStackViewState extends ConsumerState<CardStackView>
           .read(cardListProvider.notifier)
           .reorder(reordered.map((c) => c.id).toList());
     } else {
-      HapticFeedback.selectionClick();
+      ref.read(hapticsServiceProvider).selectionClick();
     }
   }
 
@@ -175,6 +193,11 @@ class _CardStackViewState extends ConsumerState<CardStackView>
         final stackHeight =
             cardHeight + (_maxVisible - 1) * _depthOffset + 24;
 
+        // Defaults to the current front card when no browse gesture is
+        // active; while one is active, stays pinned to whichever card
+        // started it (see [_browsingCardId] for why that matters).
+        final browseOwnerId = _browsingCardId ?? order.first.id;
+
         // Render back-to-front so later children draw on top; the dragged
         // card is always appended last so it stays above everything.
         final children = <Widget>[];
@@ -182,6 +205,7 @@ class _CardStackViewState extends ConsumerState<CardStackView>
           final card = order[depth];
           final isDragging = card.id == _draggingId;
           if (isDragging) continue;
+          final isBrowseOwner = card.id == browseOwnerId;
           children.add(
             _StackCard(
               key: ValueKey(card.id),
@@ -191,11 +215,38 @@ class _CardStackViewState extends ConsumerState<CardStackView>
               depthOffset: _depthOffset,
               depthScaleStep: _depthScaleStep,
               isFront: depth == 0,
-              onTap: depth == 0 ? () => _onTapFront(card) : null,
-              onBrowseDragStart: depth == 0 ? _onBrowseDragStart : null,
-              onBrowseDragUpdate: depth == 0 ? _onBrowseDragUpdate : null,
-              onBrowseDragEnd: depth == 0 ? _onBrowseDragEnd : null,
+              onTap: isBrowseOwner ? () => _onTapFront(card) : null,
+              onBrowseDragStart:
+                  isBrowseOwner ? () => _onBrowseDragStart(card.id) : null,
+              onBrowseDragUpdate: isBrowseOwner ? _onBrowseDragUpdate : null,
+              onBrowseDragEnd: isBrowseOwner ? _onBrowseDragEnd : null,
               onLongPressStart: () => _beginDrag(card.id),
+              onLongPressMove: _updateDrag,
+              onLongPressEnd: () => _endDrag(order),
+            ),
+          );
+        }
+
+        // If an in-progress browse drag has rotated its owning card past
+        // the visible window, it must still be kept mounted (just not
+        // necessarily visible) or its recognizer would be disposed
+        // mid-gesture — see [_browsingCardId].
+        final browseOwnerDepth = order.indexWhere((c) => c.id == browseOwnerId);
+        if (_browsingCardId != null && browseOwnerDepth >= visibleCount) {
+          final ownerCard = order[browseOwnerDepth];
+          children.add(
+            _StackCard(
+              key: ValueKey(ownerCard.id),
+              card: ownerCard,
+              depth: browseOwnerDepth,
+              width: cardWidth,
+              depthOffset: _depthOffset,
+              depthScaleStep: _depthScaleStep,
+              isFront: false,
+              onBrowseDragStart: () => _onBrowseDragStart(ownerCard.id),
+              onBrowseDragUpdate: _onBrowseDragUpdate,
+              onBrowseDragEnd: _onBrowseDragEnd,
+              onLongPressStart: () => _beginDrag(ownerCard.id),
               onLongPressMove: _updateDrag,
               onLongPressEnd: () => _endDrag(order),
             ),
@@ -270,7 +321,12 @@ class _StackCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scale = 1 - depth * depthScaleStep;
+    // depth can exceed the normally-visible window for a card that's kept
+    // mounted purely to preserve an in-progress gesture (see
+    // _browsingCardId in _CardStackViewState) — clamp so opacity/scale
+    // never leave Flutter's valid [0, 1] range for those off-screen frames.
+    final scale = (1 - depth * depthScaleStep).clamp(0.0, 1.0);
+    final opacity = (1 - depth * 0.08).clamp(0.0, 1.0);
     final top = depth * depthOffset + dragOffset.dy;
 
     return AnimatedPositioned(
@@ -283,7 +339,7 @@ class _StackCard extends StatelessWidget {
         scale: scale,
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),
-          opacity: 1 - depth * 0.08,
+          opacity: opacity,
           child: GestureDetector(
             onTap: onTap,
             onVerticalDragStart: onBrowseDragStart != null

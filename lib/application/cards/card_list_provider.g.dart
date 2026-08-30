@@ -41,7 +41,7 @@ final class CardListProvider
   }
 }
 
-String _$cardListHash() => r'561d74b2ed05cab79e96b35dee9f07478fcbdba6';
+String _$cardListHash() => r'ed256829e9e1632cacb4d5980eab4798190b755e';
 
 abstract class _$CardList extends $Notifier<List<CardEntity>> {
   List<CardEntity> build();

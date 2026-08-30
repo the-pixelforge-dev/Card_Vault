@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/security/lock_state_provider.dart';
+import '../../application/settings/haptics_provider.dart';
 import 'widgets/pin_dots.dart';
 import 'widgets/pin_keypad.dart';
 
@@ -53,13 +53,13 @@ class _SetPinScreenState extends ConsumerState<SetPinScreen> {
     }
 
     if (_currentEntry == _firstEntry) {
-      HapticFeedback.mediumImpact();
+      ref.read(hapticsServiceProvider).mediumImpact();
       await ref.read(appLockProvider.notifier).setPin(_currentEntry);
       if (mounted) Navigator.of(context).pop(true);
       return;
     }
 
-    HapticFeedback.heavyImpact();
+    ref.read(hapticsServiceProvider).heavyImpact();
     setState(() {
       _error = "PINs didn't match. Start again.";
       _firstEntry = '';

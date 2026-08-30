@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/security/lock_state_provider.dart';
 import '../../application/settings/settings_provider.dart';
+import '../../core/haptics/haptics_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../ai_advisor/advisor_settings_screen.dart';
 import '../groups/groups_screen.dart';
@@ -210,6 +211,40 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
               ],
+            ],
+          ),
+          _SettingsSection(
+            title: 'Haptics',
+            icon: Icons.vibration,
+            children: [
+              SwitchListTile(
+                secondary: const Icon(Icons.vibration),
+                title: const Text('Haptics'),
+                subtitle: const Text('Feel a tick for taps, drags, and reveals'),
+                value: settings.hapticsEnabled,
+                onChanged: notifier.setHapticsEnabled,
+              ),
+              if (settings.hapticsEnabled)
+                ListTile(
+                  leading: const Icon(Icons.tune),
+                  title: const Text('Strength'),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: SegmentedButton<HapticsStrength>(
+                      segments: HapticsStrength.values
+                          .map(
+                            (s) => ButtonSegment(
+                              value: s,
+                              label: Text(s.displayName),
+                            ),
+                          )
+                          .toList(),
+                      selected: {settings.hapticsStrength},
+                      onSelectionChanged: (selection) =>
+                          notifier.setHapticsStrength(selection.first),
+                    ),
+                  ),
+                ),
             ],
           ),
           _SettingsSection(

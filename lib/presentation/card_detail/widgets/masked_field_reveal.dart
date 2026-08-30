@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/security/clipboard_guard_provider.dart';
+import '../../../application/settings/haptics_provider.dart';
 
 /// A labeled sensitive value (card number, CVV, expiry) with a reveal
 /// toggle and a copy button. Copies go through the shared [ClipboardGuard]
@@ -30,7 +30,7 @@ class _MaskedFieldRevealState extends ConsumerState<MaskedFieldReveal> {
   bool _justCopied = false;
 
   Future<void> _copy() async {
-    HapticFeedback.mediumImpact();
+    ref.read(hapticsServiceProvider).mediumImpact();
     await ref
         .read(clipboardGuardProvider)
         .copyWithAutoClear(widget.realValue);
@@ -78,7 +78,7 @@ class _MaskedFieldRevealState extends ConsumerState<MaskedFieldReveal> {
             size: 20,
           ),
           onPressed: () {
-            HapticFeedback.selectionClick();
+            ref.read(hapticsServiceProvider).selectionClick();
             setState(() => _revealed = !_revealed);
           },
         ),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/security/lock_state_provider.dart';
+import '../../application/settings/haptics_provider.dart';
 import '../../application/settings/settings_provider.dart';
 import 'reset_app_screen.dart';
 import 'widgets/pin_dots.dart';
@@ -66,11 +66,11 @@ class _LockScreenState extends ConsumerState<LockScreen> {
     if (!mounted) return;
 
     if (success) {
-      HapticFeedback.mediumImpact();
+      ref.read(hapticsServiceProvider).mediumImpact();
       return;
     }
 
-    HapticFeedback.heavyImpact();
+    ref.read(hapticsServiceProvider).heavyImpact();
     setState(() {
       _entry = '';
       _error = 'Incorrect PIN.';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/haptics/haptics_service.dart';
 import '../../data/settings/imported_font_hive_model.dart';
 import '../core_providers.dart';
 import 'settings_state.dart';
@@ -41,6 +42,12 @@ class Settings extends _$Settings {
   Future<void> setDefaultCardholderName(String? name) => _persist(
     state.copyWith(defaultCardholderName: () => name),
   );
+
+  Future<void> setHapticsEnabled(bool enabled) =>
+      _persist(state.copyWith(hapticsEnabled: enabled));
+
+  Future<void> setHapticsStrength(HapticsStrength strength) =>
+      _persist(state.copyWith(hapticsStrength: strength));
 
   Future<void> setActiveFontFamily(String? fontFamily) =>
       _persist(state.copyWith(activeFontFamily: () => fontFamily));

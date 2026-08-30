@@ -12,6 +12,7 @@ import '../../core/security/crypto/export_cipher.dart';
 import '../../domain/card/card_entity.dart';
 import '../../domain/card/card_network.dart';
 import '../../domain/card/card_type.dart';
+import '../../domain/card/card_validator.dart';
 import '../../domain/group/group_entity.dart';
 
 class ExportImportScreen extends ConsumerStatefulWidget {
@@ -192,11 +193,23 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
       for (final group in groups) {
         await ref.read(groupListProvider.notifier).upsert(group);
       }
+      var imported = 0;
+      var skipped = 0;
       for (final card in cards) {
-        await ref.read(cardListProvider.notifier).upsert(card);
+        try {
+          await ref.read(cardListProvider.notifier).upsert(card);
+          imported++;
+        } on CardValidationException {
+          skipped++;
+        }
       }
 
-      setState(() => _status = 'Imported ${cards.length} card(s).');
+      setState(
+        () => _status = skipped == 0
+            ? 'Imported $imported card(s).'
+            : 'Imported $imported card(s); skipped $skipped incomplete '
+                  'card(s).',
+      );
     } on ExportDecryptionException catch (e) {
       setState(() => _status = e.message);
     } finally {

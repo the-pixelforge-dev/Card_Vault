@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../domain/card/card_entity.dart';
+import '../../domain/card/card_validator.dart';
 import '../core_providers.dart';
 
 part 'card_list_provider.g.dart';
@@ -12,7 +13,11 @@ class CardList extends _$CardList {
     return ref.watch(cardRepositoryProvider).getAll();
   }
 
+  /// Throws [CardValidationException] if [card] is missing a required
+  /// field — the one place every save (the form, and encrypted import) is
+  /// forced through, so an incomplete card can never reach storage.
   Future<void> upsert(CardEntity card) async {
+    CardValidator.ensureValid(card);
     await ref.read(cardRepositoryProvider).save(card);
     _reload();
   }

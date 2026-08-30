@@ -16,6 +16,8 @@ class AppSettingsHiveModel extends HiveObject {
     this.biometricUnlockEnabled = false,
     this.themeSeedColorArgb,
     this.defaultCardholderName,
+    this.hapticsEnabled = true,
+    this.hapticsStrength = 'medium',
   }) : importedFonts = importedFonts ?? [];
 
   /// One of 'system', 'light', 'dark'.
@@ -52,4 +54,11 @@ class AppSettingsHiveModel extends HiveObject {
   /// no default is set.
   @HiveField(8)
   String? defaultCardholderName;
+
+  @HiveField(9)
+  bool hapticsEnabled;
+
+  /// One of 'low', 'medium', 'high'.
+  @HiveField(10)
+  String hapticsStrength;
 }
