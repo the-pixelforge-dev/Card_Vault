@@ -23,13 +23,15 @@ class AppSettingsHiveModelAdapter extends TypeAdapter<AppSettingsHiveModel> {
       importedFonts: (fields[3] as List?)?.cast<ImportedFontHiveModel>(),
       biometricLockEnabled: fields[4] == null ? false : fields[4] as bool,
       autoLockAfterSeconds: fields[5] == null ? 30 : (fields[5] as num).toInt(),
+      biometricUnlockEnabled: fields[6] == null ? false : fields[6] as bool,
+      themeSeedColorArgb: (fields[7] as num?)?.toInt(),
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettingsHiveModel obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.themeMode)
       ..writeByte(1)
@@ -41,7 +43,11 @@ class AppSettingsHiveModelAdapter extends TypeAdapter<AppSettingsHiveModel> {
       ..writeByte(4)
       ..write(obj.biometricLockEnabled)
       ..writeByte(5)
-      ..write(obj.autoLockAfterSeconds);
+      ..write(obj.autoLockAfterSeconds)
+      ..writeByte(6)
+      ..write(obj.biometricUnlockEnabled)
+      ..writeByte(7)
+      ..write(obj.themeSeedColorArgb);
   }
 
   @override

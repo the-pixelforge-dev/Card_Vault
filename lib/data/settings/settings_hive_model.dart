@@ -13,6 +13,8 @@ class AppSettingsHiveModel extends HiveObject {
     List<ImportedFontHiveModel>? importedFonts,
     this.biometricLockEnabled = false,
     this.autoLockAfterSeconds = 30,
+    this.biometricUnlockEnabled = false,
+    this.themeSeedColorArgb,
   }) : importedFonts = importedFonts ?? [];
 
   /// One of 'system', 'light', 'dark'.
@@ -34,4 +36,14 @@ class AppSettingsHiveModel extends HiveObject {
   /// 0 means "lock immediately" on backgrounding.
   @HiveField(5)
   int autoLockAfterSeconds;
+
+  /// Whether biometrics can be used as a quick-unlock shortcut. The app PIN
+  /// (see PinStore) is always the guaranteed fallback regardless of this.
+  @HiveField(6)
+  bool biometricUnlockEnabled;
+
+  /// Seed color for the app-wide Material 3 color scheme. Null uses the
+  /// built-in default seed.
+  @HiveField(7)
+  int? themeSeedColorArgb;
 }

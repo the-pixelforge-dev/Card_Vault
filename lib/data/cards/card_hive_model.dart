@@ -12,6 +12,7 @@ class CardHiveModel extends HiveObject {
     required this.cvv,
     required this.issuerName,
     required this.network,
+    this.cardType = 'credit',
     required this.nickname,
     required this.colorArgb,
     this.artworkImagePath,
@@ -96,4 +97,8 @@ class CardHiveModel extends HiveObject {
 
   @HiveField(21)
   DateTime updatedAt;
+
+  /// Stored as [CardType.name] (see domain/card/card_type.dart).
+  @HiveField(22)
+  String cardType;
 }

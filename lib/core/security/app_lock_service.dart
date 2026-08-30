@@ -1,32 +1,38 @@
 import 'package:local_auth/local_auth.dart';
 
-/// Thin wrapper over `local_auth` for the app's unlock gate.
-///
-/// [authenticate] allows biometrics OR the device's own PIN/pattern/password
-/// (`biometricOnly: false`) so a user without biometrics enrolled — or a
-/// device that fails the biometric prompt — can still get in. Some Android
-/// OEMs don't reliably fall back to the device credential from within the
-/// plugin's own dialog, so the lock screen also exposes an explicit "Use
-/// device PIN" retry that just calls [authenticate] again; this service
-/// never assumes the first attempt is the only chance.
+/// Thin wrapper over `local_auth`, used strictly for the optional biometric
+/// convenience layer — the app's own PIN (see `pin_store.dart`) is always
+/// the guaranteed unlock method, so this never needs to fall back to the
+/// device's OS-level credential UI.
 class AppLockService {
   AppLockService({LocalAuthentication? localAuth})
     : _localAuth = localAuth ?? LocalAuthentication();
 
   final LocalAuthentication _localAuth;
 
-  Future<bool> canCheckSupport() async {
-    final isDeviceSupported = await _localAuth.isDeviceSupported();
-    final canCheckBiometrics = await _localAuth.canCheckBiometrics;
-    return isDeviceSupported || canCheckBiometrics;
+  /// True only if the device has biometric hardware AND at least one
+  /// biometric is actually enrolled — offering a biometric toggle when
+  /// neither is true just leads to a confusing dead end.
+  Future<bool> isBiometricAvailable() async {
+    try {
+      final supported = await _localAuth.isDeviceSupported();
+      if (!supported) return false;
+      final canCheck = await _localAuth.canCheckBiometrics;
+      if (!canCheck) return false;
+      final available = await _localAuth.getAvailableBiometrics();
+      return available.isNotEmpty;
+    } on Exception {
+      return false;
+    }
   }
 
-  Future<bool> authenticate({String reason = 'Unlock Card Vault'}) async {
+  Future<bool> authenticateBiometric({
+    String reason = 'Unlock Card Vault',
+  }) async {
     try {
       return await _localAuth.authenticate(
         localizedReason: reason,
-        biometricOnly: false,
-        persistAcrossBackgrounding: true,
+        biometricOnly: true,
       );
     } on Exception {
       return false;

@@ -24,6 +24,7 @@ class CardHiveModelAdapter extends TypeAdapter<CardHiveModel> {
       cvv: fields[4] as String,
       issuerName: fields[5] as String,
       network: fields[6] as String,
+      cardType: fields[22] == null ? 'credit' : fields[22] as String,
       nickname: fields[7] as String,
       colorArgb: (fields[8] as num).toInt(),
       artworkImagePath: fields[9] as String?,
@@ -45,7 +46,7 @@ class CardHiveModelAdapter extends TypeAdapter<CardHiveModel> {
   @override
   void write(BinaryWriter writer, CardHiveModel obj) {
     writer
-      ..writeByte(22)
+      ..writeByte(23)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -89,7 +90,9 @@ class CardHiveModelAdapter extends TypeAdapter<CardHiveModel> {
       ..writeByte(20)
       ..write(obj.createdAt)
       ..writeByte(21)
-      ..write(obj.updatedAt);
+      ..write(obj.updatedAt)
+      ..writeByte(22)
+      ..write(obj.cardType);
   }
 
   @override

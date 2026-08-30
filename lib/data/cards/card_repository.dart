@@ -2,6 +2,7 @@ import 'package:hive_ce/hive.dart';
 
 import '../../domain/card/card_entity.dart';
 import '../../domain/card/card_network.dart';
+import '../../domain/card/card_type.dart';
 import 'card_hive_model.dart';
 
 class CardRepository {
@@ -44,6 +45,7 @@ class CardRepository {
     cvv: m.cvv,
     issuerName: m.issuerName,
     network: CardNetwork.values.byName(m.network),
+    cardType: CardType.values.byName(m.cardType),
     nickname: m.nickname,
     colorArgb: m.colorArgb,
     artworkImagePath: m.artworkImagePath,
@@ -69,6 +71,7 @@ class CardRepository {
     cvv: e.cvv,
     issuerName: e.issuerName,
     network: e.network.name,
+    cardType: e.cardType.name,
     nickname: e.nickname,
     colorArgb: e.colorArgb,
     artworkImagePath: e.artworkImagePath,

@@ -29,8 +29,14 @@ class Settings extends _$Settings {
   Future<void> setBiometricLockEnabled(bool enabled) =>
       _persist(state.copyWith(biometricLockEnabled: enabled));
 
+  Future<void> setBiometricUnlockEnabled(bool enabled) =>
+      _persist(state.copyWith(biometricUnlockEnabled: enabled));
+
   Future<void> setAutoLockAfterSeconds(int seconds) =>
       _persist(state.copyWith(autoLockAfterSeconds: seconds));
+
+  Future<void> setThemeSeedColor(int? colorArgb) =>
+      _persist(state.copyWith(themeSeedColorArgb: () => colorArgb));
 
   Future<void> setActiveFontFamily(String? fontFamily) =>
       _persist(state.copyWith(activeFontFamily: () => fontFamily));

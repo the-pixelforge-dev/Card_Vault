@@ -1,0 +1,333 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../application/security/lock_state_provider.dart';
+import '../../application/settings/settings_provider.dart';
+import '../../core/theme/app_theme.dart';
+import '../ai_advisor/advisor_settings_screen.dart';
+import '../groups/groups_screen.dart';
+import '../lock/set_pin_screen.dart';
+import 'export_import_screen.dart';
+import 'font_import_screen.dart';
+
+class SettingsScreen extends ConsumerWidget {
+  const SettingsScreen({super.key});
+
+  Future<void> _toggleAppLock(
+    BuildContext context,
+    WidgetRef ref,
+    bool enable,
+  ) async {
+    final notifier = ref.read(settingsProvider.notifier);
+    final lockNotifier = ref.read(appLockProvider.notifier);
+
+    if (enable) {
+      final success = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => const SetPinScreen()),
+      );
+      if (success == true) {
+        await notifier.setBiometricLockEnabled(true);
+      }
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Turn off App Lock?'),
+        content: const Text(
+          'Card Vault will open without a PIN or biometric check.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Turn off'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await lockNotifier.clearPin();
+    await notifier.setBiometricLockEnabled(false);
+    await notifier.setBiometricUnlockEnabled(false);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final notifier = ref.read(settingsProvider.notifier);
+    final biometricAvailable =
+        ref.watch(isBiometricAvailableProvider).value ?? false;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: [
+          _SettingsSection(
+            title: 'Appearance',
+            icon: Icons.palette_outlined,
+            children: [
+              _SubLabel('Theme'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SegmentedButton<ThemeMode>(
+                  segments: const [
+                    ButtonSegment(
+                      value: ThemeMode.system,
+                      label: Text('System'),
+                      icon: Icon(Icons.brightness_auto_outlined),
+                    ),
+                    ButtonSegment(
+                      value: ThemeMode.light,
+                      label: Text('Light'),
+                      icon: Icon(Icons.light_mode_outlined),
+                    ),
+                    ButtonSegment(
+                      value: ThemeMode.dark,
+                      label: Text('Dark'),
+                      icon: Icon(Icons.dark_mode_outlined),
+                    ),
+                  ],
+                  selected: {settings.themeMode},
+                  onSelectionChanged: (selection) =>
+                      notifier.setThemeMode(selection.first),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _SubLabel('Accent Color'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: AppAccentColors.all.map((color) {
+                    final isSelected =
+                        (settings.themeSeedColorArgb ??
+                            AppAccentColors.defaultColor.toARGB32()) ==
+                        color.toARGB32();
+                    return GestureDetector(
+                      onTap: () =>
+                          notifier.setThemeSeedColor(color.toARGB32()),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: isSelected
+                              ? Border.all(
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  width: 3,
+                                )
+                              : null,
+                        ),
+                        child: isSelected
+                            ? const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 18,
+                              )
+                            : null,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.format_size),
+                title: const Text('UI Scale'),
+                subtitle: Slider(
+                  value: settings.uiScaleFactor,
+                  min: 0.85,
+                  max: 1.3,
+                  divisions: 9,
+                  label: '${(settings.uiScaleFactor * 100).round()}%',
+                  onChanged: notifier.setUiScaleFactor,
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.font_download_outlined),
+                title: const Text('Font'),
+                subtitle: Text(
+                  settings.activeFontDisplayName(BundledFonts.inter),
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const FontImportScreen()),
+                ),
+              ),
+            ],
+          ),
+          _SettingsSection(
+            title: 'Security',
+            icon: Icons.shield_outlined,
+            children: [
+              SwitchListTile(
+                secondary: const Icon(Icons.lock_outline),
+                title: const Text('App Lock'),
+                subtitle: const Text('Require a PIN to open Card Vault'),
+                value: settings.biometricLockEnabled,
+                onChanged: (v) => _toggleAppLock(context, ref, v),
+              ),
+              if (settings.biometricLockEnabled) ...[
+                ListTile(
+                  leading: const Icon(Icons.password),
+                  title: const Text('Change PIN'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SetPinScreen()),
+                  ),
+                ),
+                if (biometricAvailable)
+                  SwitchListTile(
+                    secondary: const Icon(Icons.fingerprint),
+                    title: const Text('Unlock with biometrics'),
+                    subtitle: const Text('Your PIN always still works'),
+                    value: settings.biometricUnlockEnabled,
+                    onChanged: notifier.setBiometricUnlockEnabled,
+                  ),
+                ListTile(
+                  leading: const Icon(Icons.timer_outlined),
+                  title: const Text('Auto-lock after'),
+                  trailing: DropdownButton<int>(
+                    value: settings.autoLockAfterSeconds,
+                    items: const [
+                      DropdownMenuItem(value: 0, child: Text('Immediately')),
+                      DropdownMenuItem(value: 30, child: Text('30 seconds')),
+                      DropdownMenuItem(value: 60, child: Text('1 minute')),
+                      DropdownMenuItem(value: 300, child: Text('5 minutes')),
+                      DropdownMenuItem(value: 900, child: Text('15 minutes')),
+                    ],
+                    onChanged: (v) => notifier.setAutoLockAfterSeconds(v!),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          _SettingsSection(
+            title: 'Organization',
+            icon: Icons.folder_outlined,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.label_outline),
+                title: const Text('Manage Groups'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const GroupsScreen()),
+                ),
+              ),
+            ],
+          ),
+          _SettingsSection(
+            title: 'Data',
+            icon: Icons.storage_outlined,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.import_export),
+                title: const Text('Encrypted Export / Import'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const ExportImportScreen(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          _SettingsSection(
+            title: 'AI Purchase Advisor',
+            icon: Icons.auto_awesome_outlined,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.vpn_key_outlined),
+                title: const Text('Gemini API Key'),
+                subtitle: const Text(
+                  'Optional — off by default, no cloud sync',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const AdvisorSettingsScreen(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({
+    required this.title,
+    required this.icon,
+    required this.children,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Card(
+            margin: EdgeInsets.zero,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(children: children),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SubLabel extends StatelessWidget {
+  const _SubLabel(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}

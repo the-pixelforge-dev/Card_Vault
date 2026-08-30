@@ -12,6 +12,8 @@ class SettingsState {
     required this.importedFonts,
     required this.biometricLockEnabled,
     required this.autoLockAfterSeconds,
+    required this.biometricUnlockEnabled,
+    required this.themeSeedColorArgb,
   });
 
   factory SettingsState.fromHiveModel(AppSettingsHiveModel m) {
@@ -22,6 +24,8 @@ class SettingsState {
       importedFonts: List<ImportedFontHiveModel>.from(m.importedFonts),
       biometricLockEnabled: m.biometricLockEnabled,
       autoLockAfterSeconds: m.autoLockAfterSeconds,
+      biometricUnlockEnabled: m.biometricUnlockEnabled,
+      themeSeedColorArgb: m.themeSeedColorArgb,
     );
   }
 
@@ -31,6 +35,20 @@ class SettingsState {
   final List<ImportedFontHiveModel> importedFonts;
   final bool biometricLockEnabled;
   final int autoLockAfterSeconds;
+  final bool biometricUnlockEnabled;
+  final int? themeSeedColorArgb;
+
+  /// The display name shown in Settings for the active font — the bundled
+  /// family name itself, or the human-readable name of an imported font
+  /// (never its internal `UserFont_<uuid>` family id).
+  String activeFontDisplayName(String defaultBundledFamily) {
+    final family = activeFontFamily;
+    if (family == null) return defaultBundledFamily;
+    final imported = importedFonts
+        .where((f) => f.fontFamily == family)
+        .firstOrNull;
+    return imported?.displayName ?? family;
+  }
 
   AppSettingsHiveModel toHiveModel() => AppSettingsHiveModel(
     themeMode: themeMode.name,
@@ -39,6 +57,8 @@ class SettingsState {
     importedFonts: importedFonts,
     biometricLockEnabled: biometricLockEnabled,
     autoLockAfterSeconds: autoLockAfterSeconds,
+    biometricUnlockEnabled: biometricUnlockEnabled,
+    themeSeedColorArgb: themeSeedColorArgb,
   );
 
   SettingsState copyWith({
@@ -48,6 +68,8 @@ class SettingsState {
     List<ImportedFontHiveModel>? importedFonts,
     bool? biometricLockEnabled,
     int? autoLockAfterSeconds,
+    bool? biometricUnlockEnabled,
+    int? Function()? themeSeedColorArgb,
   }) {
     return SettingsState(
       themeMode: themeMode ?? this.themeMode,
@@ -59,6 +81,15 @@ class SettingsState {
       biometricLockEnabled: biometricLockEnabled ?? this.biometricLockEnabled,
       autoLockAfterSeconds:
           autoLockAfterSeconds ?? this.autoLockAfterSeconds,
+      biometricUnlockEnabled:
+          biometricUnlockEnabled ?? this.biometricUnlockEnabled,
+      themeSeedColorArgb: themeSeedColorArgb != null
+          ? themeSeedColorArgb()
+          : this.themeSeedColorArgb,
     );
   }
+}
+
+extension _FirstOrNull<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
 }

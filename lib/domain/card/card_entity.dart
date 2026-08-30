@@ -1,4 +1,5 @@
 import 'card_network.dart';
+import 'card_type.dart';
 
 /// Pure-Dart representation of a saved card, independent of Hive.
 class CardEntity {
@@ -10,6 +11,7 @@ class CardEntity {
     required this.cvv,
     required this.issuerName,
     required this.network,
+    this.cardType = CardType.credit,
     required this.nickname,
     required this.colorArgb,
     this.artworkImagePath,
@@ -34,6 +36,7 @@ class CardEntity {
   final String cvv;
   final String issuerName;
   final CardNetwork network;
+  final CardType cardType;
   final String nickname;
   final int colorArgb;
   final String? artworkImagePath;
@@ -66,6 +69,7 @@ class CardEntity {
     String? cvv,
     String? issuerName,
     CardNetwork? network,
+    CardType? cardType,
     String? nickname,
     int? colorArgb,
     String? artworkImagePath,
@@ -89,6 +93,7 @@ class CardEntity {
       cvv: cvv ?? this.cvv,
       issuerName: issuerName ?? this.issuerName,
       network: network ?? this.network,
+      cardType: cardType ?? this.cardType,
       nickname: nickname ?? this.nickname,
       colorArgb: colorArgb ?? this.colorArgb,
       artworkImagePath: artworkImagePath ?? this.artworkImagePath,
