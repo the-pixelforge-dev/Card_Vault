@@ -14,26 +14,30 @@ void main() {
 
       final blob = await cipher.encrypt(
         plainText: plainText,
-        passphrase: 'correct horse battery staple',
+        passcode: '482917',
       );
 
-      final decrypted = await cipher.decrypt(
-        blob: blob,
-        passphrase: 'correct horse battery staple',
-      );
+      final decrypted = await cipher.decrypt(blob: blob, passcode: '482917');
 
       expect(utf8.decode(decrypted), '{"cards":[{"nickname":"Test"}]}');
     });
 
-    test('throws ExportDecryptionException on wrong passphrase', () async {
+    test('round-trips with the shortest allowed 4-digit passcode', () async {
+      final plainText = utf8.encode('short passcode');
+      final blob = await cipher.encrypt(plainText: plainText, passcode: '4821');
+      final decrypted = await cipher.decrypt(blob: blob, passcode: '4821');
+      expect(utf8.decode(decrypted), 'short passcode');
+    });
+
+    test('throws ExportDecryptionException on wrong passcode', () async {
       final plainText = utf8.encode('secret data');
       final blob = await cipher.encrypt(
         plainText: plainText,
-        passphrase: 'right passphrase',
+        passcode: '135790',
       );
 
       expect(
-        () => cipher.decrypt(blob: blob, passphrase: 'wrong passphrase'),
+        () => cipher.decrypt(blob: blob, passcode: '246801'),
         throwsA(isA<ExportDecryptionException>()),
       );
     });
@@ -41,7 +45,7 @@ void main() {
     test('KDF cost params travel with the blob', () async {
       final blob = await cipher.encrypt(
         plainText: utf8.encode('x'),
-        passphrase: 'p',
+        passcode: '1234',
       );
       expect(blob.memory, 256);
       expect(blob.iterations, 1);

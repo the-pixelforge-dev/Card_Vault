@@ -15,6 +15,7 @@ import '../../domain/card/card_network.dart';
 import '../../domain/card/card_type.dart';
 import '../../domain/card/card_validator.dart';
 import '../../domain/group/group_entity.dart';
+import 'widgets/passcode_entry_screen.dart';
 
 class ExportImportScreen extends ConsumerStatefulWidget {
   const ExportImportScreen({super.key});
@@ -98,8 +99,13 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
 
   Future<void> _export() async {
     ref.read(hapticsServiceProvider).selectionClick();
-    final passphrase = await _promptPassphrase(confirm: true);
-    if (passphrase == null) return;
+    final passcode = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => const PasscodeEntryScreen(mode: PasscodeEntryMode.create),
+      ),
+    );
+    if (passcode == null) return;
+    if (!mounted) return;
 
     setState(() {
       _busy = true;
@@ -117,7 +123,7 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
       const cipher = ExportCipher();
       final blob = await cipher.encrypt(
         plainText: utf8.encode(payload),
-        passphrase: passphrase,
+        passcode: passcode,
       );
 
       final fileName =
@@ -164,9 +170,15 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
       ),
     );
     if (confirmedOverwrite != true) return;
+    if (!mounted) return;
 
-    final passphrase = await _promptPassphrase(confirm: false);
-    if (passphrase == null) return;
+    final passcode = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => const PasscodeEntryScreen(mode: PasscodeEntryMode.enter),
+      ),
+    );
+    if (passcode == null) return;
+    if (!mounted) return;
 
     setState(() {
       _busy = true;
@@ -182,7 +194,7 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
       const cipher = ExportCipher();
       final plainText = await cipher.decrypt(
         blob: blob,
-        passphrase: passphrase,
+        passcode: passcode,
       );
       final decoded = jsonDecode(utf8.decode(plainText)) as Map<String, Object?>;
 
@@ -220,76 +232,6 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
     }
   }
 
-  Future<String?> _promptPassphrase({required bool confirm}) async {
-    final controller = TextEditingController();
-    final confirmController = TextEditingController();
-
-    String? error;
-
-    return showDialog<String>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) {
-          return AlertDialog(
-            title: Text(confirm ? 'Set export passphrase' : 'Enter passphrase'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: controller,
-                  obscureText: true,
-                  autofocus: true,
-                  decoration: const InputDecoration(labelText: 'Passphrase'),
-                ),
-                if (confirm) ...[
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: confirmController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Confirm passphrase',
-                    ),
-                  ),
-                ],
-                if (error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      error!,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  final value = controller.text;
-                  if (value.length < 8) {
-                    setDialogState(
-                      () => error = 'Use at least 8 characters.',
-                    );
-                    return;
-                  }
-                  if (confirm && value != confirmController.text) {
-                    setDialogState(() => error = 'Passphrases don\'t match.');
-                    return;
-                  }
-                  Navigator.of(dialogContext).pop(value);
-                },
-                child: const Text('Continue'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -299,9 +241,9 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
         children: [
           Text(
             'Export creates an AES-256-GCM encrypted .cardvault file '
-            'protected by a passphrase you choose. It never leaves this '
-            'device unless you move it yourself, and your Gemini API key '
-            '(if set) is never included.',
+            'protected by a 4-10 digit passcode you choose. It never '
+            'leaves this device unless you move it yourself, and your '
+            'Gemini API key (if set) is never included.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 24),
