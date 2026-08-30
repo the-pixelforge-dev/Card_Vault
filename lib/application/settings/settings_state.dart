@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../data/settings/imported_font_hive_model.dart';
 import '../../data/settings/settings_hive_model.dart';
 
@@ -14,6 +15,7 @@ class SettingsState {
     required this.autoLockAfterSeconds,
     required this.biometricUnlockEnabled,
     required this.themeSeedColorArgb,
+    required this.defaultCardholderName,
   });
 
   factory SettingsState.fromHiveModel(AppSettingsHiveModel m) {
@@ -26,6 +28,7 @@ class SettingsState {
       autoLockAfterSeconds: m.autoLockAfterSeconds,
       biometricUnlockEnabled: m.biometricUnlockEnabled,
       themeSeedColorArgb: m.themeSeedColorArgb,
+      defaultCardholderName: m.defaultCardholderName,
     );
   }
 
@@ -37,17 +40,18 @@ class SettingsState {
   final int autoLockAfterSeconds;
   final bool biometricUnlockEnabled;
   final int? themeSeedColorArgb;
+  final String? defaultCardholderName;
 
   /// The display name shown in Settings for the active font — the bundled
   /// family name itself, or the human-readable name of an imported font
   /// (never its internal `UserFont_<uuid>` family id).
   String activeFontDisplayName(String defaultBundledFamily) {
     final family = activeFontFamily;
-    if (family == null) return defaultBundledFamily;
+    if (family == null) return BundledFonts.displayName(defaultBundledFamily);
     final imported = importedFonts
         .where((f) => f.fontFamily == family)
         .firstOrNull;
-    return imported?.displayName ?? family;
+    return imported?.displayName ?? BundledFonts.displayName(family);
   }
 
   AppSettingsHiveModel toHiveModel() => AppSettingsHiveModel(
@@ -59,6 +63,7 @@ class SettingsState {
     autoLockAfterSeconds: autoLockAfterSeconds,
     biometricUnlockEnabled: biometricUnlockEnabled,
     themeSeedColorArgb: themeSeedColorArgb,
+    defaultCardholderName: defaultCardholderName,
   );
 
   SettingsState copyWith({
@@ -70,6 +75,7 @@ class SettingsState {
     int? autoLockAfterSeconds,
     bool? biometricUnlockEnabled,
     int? Function()? themeSeedColorArgb,
+    String? Function()? defaultCardholderName,
   }) {
     return SettingsState(
       themeMode: themeMode ?? this.themeMode,
@@ -86,6 +92,9 @@ class SettingsState {
       themeSeedColorArgb: themeSeedColorArgb != null
           ? themeSeedColorArgb()
           : this.themeSeedColorArgb,
+      defaultCardholderName: defaultCardholderName != null
+          ? defaultCardholderName()
+          : this.defaultCardholderName,
     );
   }
 }

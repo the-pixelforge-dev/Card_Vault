@@ -24,8 +24,6 @@ class GroupFilterDropdown extends ConsumerWidget {
         return filter.value != null
             ? CardNetwork.values.byName(filter.value!).displayName
             : 'Network';
-      case GroupingMode.color:
-        return 'Color';
       case GroupingMode.custom:
         final groups = ref.read(groupListProvider);
         return groups
@@ -88,10 +86,15 @@ class _GroupPickerSheet extends ConsumerWidget {
     final groups = ref.watch(groupListProvider);
     final theme = Theme.of(context);
 
-    final issuers = cards.map((c) => c.issuerName).toSet().toList()..sort();
+    final issuers =
+        cards
+            .map((c) => c.issuerName.trim())
+            .where((issuer) => issuer.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
     final networks = cards.map((c) => c.network).toSet().toList()
       ..sort((a, b) => a.displayName.compareTo(b.displayName));
-    final colors = cards.map((c) => c.colorArgb).toSet().toList();
 
     Widget sectionTitle(String text) => Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -190,32 +193,6 @@ class _GroupPickerSheet extends ConsumerWidget {
                               mode: GroupingMode.network,
                               value: network.name,
                             ),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-            ],
-            if (colors.isNotEmpty) ...[
-              sectionTitle('By Color'),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                child: Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: colors
-                      .map(
-                        (colorArgb) => GestureDetector(
-                          onTap: () => onSelect(
-                            CardFilter(
-                              mode: GroupingMode.color,
-                              value: colorArgb.toString(),
-                            ),
-                          ),
-                          child: CircleAvatar(
-                            backgroundColor: Color(colorArgb),
-                            radius: 18,
                           ),
                         ),
                       )

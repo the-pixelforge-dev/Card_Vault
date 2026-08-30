@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../application/cards/card_list_provider.dart';
 import '../../application/groups/group_provider.dart';
+import '../../domain/card/card_entity.dart';
 import '../card_form/card_form_screen.dart';
 import '../widgets_shared/digital_card_widget.dart';
 import 'widgets/flip_card_widget.dart';
@@ -17,6 +18,37 @@ class CardDetailScreen extends ConsumerWidget {
     final uri = Uri.tryParse(url);
     if (uri == null) return;
     await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    CardEntity card,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete card?'),
+        content: Text(
+          'This permanently removes "${card.nickname}" from Card Vault.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ref.read(cardListProvider.notifier).remove(card.id);
+      if (context.mounted) Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -50,6 +82,10 @@ class CardDetailScreen extends ConsumerWidget {
                 builder: (_) => CardFormScreen(existingCard: card),
               ),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => _confirmDelete(context, ref, card),
           ),
         ],
       ),

@@ -15,6 +15,7 @@ class AppSettingsHiveModel extends HiveObject {
     this.autoLockAfterSeconds = 30,
     this.biometricUnlockEnabled = false,
     this.themeSeedColorArgb,
+    this.defaultCardholderName,
   }) : importedFonts = importedFonts ?? [];
 
   /// One of 'system', 'light', 'dark'.
@@ -46,4 +47,9 @@ class AppSettingsHiveModel extends HiveObject {
   /// built-in default seed.
   @HiveField(7)
   int? themeSeedColorArgb;
+
+  /// Pre-fills the cardholder name field when adding a new card. Null means
+  /// no default is set.
+  @HiveField(8)
+  String? defaultCardholderName;
 }

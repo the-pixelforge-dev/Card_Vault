@@ -5,14 +5,14 @@ import 'card_list_provider.dart';
 
 part 'card_filter_provider.g.dart';
 
-enum GroupingMode { all, cardType, issuer, network, color, custom }
+enum GroupingMode { all, cardType, issuer, network, custom }
 
 class CardFilter {
   const CardFilter({this.mode = GroupingMode.all, this.value, this.searchQuery});
 
-  /// For [GroupingMode.issuer]/[GroupingMode.network]/[GroupingMode.color],
-  /// the matching field value; for [GroupingMode.cardType], a [CardType]
-  /// name; for [GroupingMode.custom], a group id.
+  /// For [GroupingMode.issuer]/[GroupingMode.network], the matching field
+  /// value; for [GroupingMode.cardType], a [CardType] name; for
+  /// [GroupingMode.custom], a group id.
   final GroupingMode mode;
   final String? value;
 
@@ -34,8 +34,6 @@ class CardFilter {
         return card.issuerName == value;
       case GroupingMode.network:
         return card.network.name == value;
-      case GroupingMode.color:
-        return card.colorArgb.toString() == value;
       case GroupingMode.custom:
         return card.groupIds.contains(value);
     }

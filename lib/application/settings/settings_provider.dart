@@ -38,6 +38,10 @@ class Settings extends _$Settings {
   Future<void> setThemeSeedColor(int? colorArgb) =>
       _persist(state.copyWith(themeSeedColorArgb: () => colorArgb));
 
+  Future<void> setDefaultCardholderName(String? name) => _persist(
+    state.copyWith(defaultCardholderName: () => name),
+  );
+
   Future<void> setActiveFontFamily(String? fontFamily) =>
       _persist(state.copyWith(activeFontFamily: () => fontFamily));
 

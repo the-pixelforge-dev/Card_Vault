@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/cards/card_list_provider.dart';
 import '../../application/groups/group_provider.dart';
+import '../../application/settings/settings_provider.dart';
 import '../../core/network_detection/card_network_detector.dart';
 import '../../domain/card/card_entity.dart';
 import '../../domain/card/card_network.dart';
@@ -70,7 +71,10 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
   void initState() {
     super.initState();
     final card = widget.existingCard;
-    _cardholderController = TextEditingController(text: card?.cardholderName);
+    _cardholderController = TextEditingController(
+      text: card?.cardholderName ??
+          ref.read(settingsProvider).defaultCardholderName,
+    );
     _numberController = TextEditingController(text: card?.cardNumber);
     _expiryController = TextEditingController(text: card?.expiryMonthYear);
     _cvvController = TextEditingController(text: card?.cvv);
@@ -125,7 +129,16 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Please fill in all required fields correctly.'),
+          ),
+        );
+      return;
+    }
 
     final now = DateTime.now();
     final existing = widget.existingCard;
@@ -250,6 +263,7 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
       ),
       body: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
@@ -289,9 +303,19 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
               ),
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              validator: (v) => LuhnValidator.isValid(v ?? '')
-                  ? null
-                  : 'Enter a valid card number',
+              validator: (v) {
+                final digits = v ?? '';
+                if (!LuhnValidator.isValid(digits)) {
+                  return 'Enter a valid card number';
+                }
+                if (_network.validNumberLengths.isNotEmpty &&
+                    !_network.validNumberLengths.contains(digits.length)) {
+                  final lengths = _network.validNumberLengths.toList()
+                    ..sort();
+                  return '${_network.displayName} numbers are ${lengths.join(" or ")} digits';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 12),
             Row(

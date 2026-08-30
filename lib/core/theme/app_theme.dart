@@ -8,8 +8,14 @@ class BundledFonts {
   static const inter = 'Inter';
   static const manrope = 'Manrope';
   static const spaceGrotesk = 'SpaceGrotesk';
+  static const poppinsBold = 'PoppinsBold';
 
-  static const all = [inter, manrope, spaceGrotesk];
+  static const all = [inter, manrope, spaceGrotesk, poppinsBold];
+
+  /// Human-readable label for [poppinsBold] in Settings — the family id
+  /// itself isn't a display name.
+  static String displayName(String family) =>
+      family == poppinsBold ? 'Poppins Bold' : family;
 }
 
 /// A curated palette of accent seed colors offered in Settings. Each drives

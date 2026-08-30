@@ -67,3 +67,16 @@ flutter:
           weight: 600
         - asset: assets/fonts/SpaceGrotesk.ttf
           weight: 700
+    - family: PoppinsBold
+      fonts:
+        # A single static Bold cut mapped to every weight, so picking this
+        # family renders all app text in that heavy weight deliberately —
+        # not a full variable family like the others above.
+        - asset: assets/fonts/PoppinsBold.ttf
+          weight: 400
+        - asset: assets/fonts/PoppinsBold.ttf
+          weight: 500
+        - asset: assets/fonts/PoppinsBold.ttf
+          weight: 600
+        - asset: assets/fonts/PoppinsBold.ttf
+          weight: 700

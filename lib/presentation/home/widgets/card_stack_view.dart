@@ -9,8 +9,11 @@ import 'hollow_card_empty_state.dart';
 
 /// The home screen's signature overlapping card stack:
 /// - Tap the front card to open its detail.
-/// - A quick vertical swipe on the front card cycles it to the back of the
-///   stack, so browsing never changes the saved order.
+/// - Dragging vertically on the front card cycles through the stack live,
+///   distance-driven rather than gated on release: a short flick cycles one
+///   card, a long sustained drag fans rapidly through many with a haptic
+///   tick per card, like riffling a deck. Browsing never changes the saved
+///   order.
 /// - A long-press-and-drag on any visible card reorders the stack and
 ///   persists the new order.
 class CardStackView extends ConsumerStatefulWidget {
@@ -38,7 +41,12 @@ class _CardStackViewState extends ConsumerState<CardStackView>
   static const _depthOffset = 16.0;
   static const _depthScaleStep = 0.045;
 
+  /// Pixels of cumulative vertical drag needed to cycle one card. Small
+  /// enough that a sustained drag fans through several cards a second.
+  static const _cyclePixelsPerCard = 45.0;
+
   int _browseRotation = 0;
+  double _cycleAccumulator = 0;
   String? _draggingId;
   Offset _dragDelta = Offset.zero;
   List<String>? _previousCardIds;
@@ -61,11 +69,37 @@ class _CardStackViewState extends ConsumerState<CardStackView>
     _previousCardIds = ids;
   }
 
-  void _onSwipeFront(DragEndDetails details) {
-    final velocity = details.primaryVelocity ?? 0;
-    if (velocity.abs() < 200 || widget.cards.length < 2) return;
-    HapticFeedback.lightImpact();
-    setState(() => _browseRotation = (_browseRotation + 1) % widget.cards.length);
+  void _onBrowseDragStart() {
+    _cycleAccumulator = 0;
+  }
+
+  void _onBrowseDragUpdate(DragUpdateDetails details) {
+    if (widget.cards.length < 2) return;
+
+    // Dragging up cycles forward (front card moves to the back); dragging
+    // down cycles backward (brings the previous card back to front).
+    _cycleAccumulator += -details.delta.dy;
+
+    while (_cycleAccumulator >= _cyclePixelsPerCard) {
+      _cycleAccumulator -= _cyclePixelsPerCard;
+      _cycleStack(1);
+    }
+    while (_cycleAccumulator <= -_cyclePixelsPerCard) {
+      _cycleAccumulator += _cyclePixelsPerCard;
+      _cycleStack(-1);
+    }
+  }
+
+  void _onBrowseDragEnd(DragEndDetails details) {
+    _cycleAccumulator = 0;
+  }
+
+  void _cycleStack(int steps) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _browseRotation =
+          (_browseRotation + steps) % widget.cards.length;
+    });
   }
 
   void _onTapFront(CardEntity card) {
@@ -158,7 +192,9 @@ class _CardStackViewState extends ConsumerState<CardStackView>
               depthScaleStep: _depthScaleStep,
               isFront: depth == 0,
               onTap: depth == 0 ? () => _onTapFront(card) : null,
-              onSwipeEnd: depth == 0 ? _onSwipeFront : null,
+              onBrowseDragStart: depth == 0 ? _onBrowseDragStart : null,
+              onBrowseDragUpdate: depth == 0 ? _onBrowseDragUpdate : null,
+              onBrowseDragEnd: depth == 0 ? _onBrowseDragEnd : null,
               onLongPressStart: () => _beginDrag(card.id),
               onLongPressMove: _updateDrag,
               onLongPressEnd: () => _endDrag(order),
@@ -208,7 +244,9 @@ class _StackCard extends StatelessWidget {
     required this.depthScaleStep,
     required this.isFront,
     this.onTap,
-    this.onSwipeEnd,
+    this.onBrowseDragStart,
+    this.onBrowseDragUpdate,
+    this.onBrowseDragEnd,
     this.dragOffset = Offset.zero,
     required this.onLongPressStart,
     required this.onLongPressMove,
@@ -222,7 +260,9 @@ class _StackCard extends StatelessWidget {
   final double depthScaleStep;
   final bool isFront;
   final VoidCallback? onTap;
-  final void Function(DragEndDetails details)? onSwipeEnd;
+  final VoidCallback? onBrowseDragStart;
+  final void Function(DragUpdateDetails details)? onBrowseDragUpdate;
+  final void Function(DragEndDetails details)? onBrowseDragEnd;
   final Offset dragOffset;
   final VoidCallback onLongPressStart;
   final void Function(Offset delta) onLongPressMove;
@@ -246,7 +286,11 @@ class _StackCard extends StatelessWidget {
           opacity: 1 - depth * 0.08,
           child: GestureDetector(
             onTap: onTap,
-            onVerticalDragEnd: onSwipeEnd,
+            onVerticalDragStart: onBrowseDragStart != null
+                ? (_) => onBrowseDragStart!()
+                : null,
+            onVerticalDragUpdate: onBrowseDragUpdate,
+            onVerticalDragEnd: onBrowseDragEnd,
             onLongPressStart: (_) => onLongPressStart(),
             onLongPressMoveUpdate: (details) =>
                 onLongPressMove(details.offsetFromOrigin),

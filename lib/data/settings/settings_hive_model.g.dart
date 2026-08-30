@@ -25,13 +25,14 @@ class AppSettingsHiveModelAdapter extends TypeAdapter<AppSettingsHiveModel> {
       autoLockAfterSeconds: fields[5] == null ? 30 : (fields[5] as num).toInt(),
       biometricUnlockEnabled: fields[6] == null ? false : fields[6] as bool,
       themeSeedColorArgb: (fields[7] as num?)?.toInt(),
+      defaultCardholderName: fields[8] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettingsHiveModel obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.themeMode)
       ..writeByte(1)
@@ -47,7 +48,9 @@ class AppSettingsHiveModelAdapter extends TypeAdapter<AppSettingsHiveModel> {
       ..writeByte(6)
       ..write(obj.biometricUnlockEnabled)
       ..writeByte(7)
-      ..write(obj.themeSeedColorArgb);
+      ..write(obj.themeSeedColorArgb)
+      ..writeByte(8)
+      ..write(obj.defaultCardholderName);
   }
 
   @override

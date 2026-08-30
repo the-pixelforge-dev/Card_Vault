@@ -64,7 +64,7 @@ class HomeScreen extends ConsumerWidget {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.only(top: 28),
               child: CardStackView(
                 cards: cards,
                 isFiltered: isFiltered,

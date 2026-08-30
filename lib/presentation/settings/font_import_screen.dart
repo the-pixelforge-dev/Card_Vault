@@ -80,7 +80,10 @@ class _FontImportScreenState extends ConsumerState<FontImportScreen> {
             const _Header('Bundled'),
             ...BundledFonts.all.map(
               (family) => RadioListTile<String>(
-                title: Text(family, style: TextStyle(fontFamily: family)),
+                title: Text(
+                  BundledFonts.displayName(family),
+                  style: TextStyle(fontFamily: family),
+                ),
                 value: family,
               ),
             ),

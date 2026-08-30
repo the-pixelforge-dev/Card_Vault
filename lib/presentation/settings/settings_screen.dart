@@ -9,6 +9,7 @@ import '../groups/groups_screen.dart';
 import '../lock/set_pin_screen.dart';
 import 'export_import_screen.dart';
 import 'font_import_screen.dart';
+import 'widgets/default_cardholder_name_field.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -210,6 +211,11 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ],
             ],
+          ),
+          _SettingsSection(
+            title: 'Card Defaults',
+            icon: Icons.badge_outlined,
+            children: const [DefaultCardholderNameField()],
           ),
           _SettingsSection(
             title: 'Organization',
