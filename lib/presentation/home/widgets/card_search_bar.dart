@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/cards/card_filter_provider.dart';
+import '../../../application/settings/haptics_provider.dart';
 
 /// A search icon that expands into a text field, right-aligned next to the
 /// group filter dropdown. Typing filters the card stack live by nickname.
@@ -16,9 +17,13 @@ class _CardSearchBarState extends ConsumerState<CardSearchBar> {
   final _controller = TextEditingController();
   bool _expanded = false;
 
-  void _open() => setState(() => _expanded = true);
+  void _open() {
+    ref.read(hapticsServiceProvider).selectionClick();
+    setState(() => _expanded = true);
+  }
 
   void _close() {
+    ref.read(hapticsServiceProvider).selectionClick();
     _controller.clear();
     ref.read(activeCardFilterProvider.notifier).setSearchQuery(null);
     setState(() => _expanded = false);

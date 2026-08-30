@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/cards/card_list_provider.dart';
 import '../../application/groups/group_provider.dart';
+import '../../application/settings/haptics_provider.dart';
 import '../../application/settings/settings_provider.dart';
 import '../../core/network_detection/card_network_detector.dart';
 import '../../domain/card/card_entity.dart';
@@ -30,6 +31,7 @@ const _presetColors = <int>[
   0xFF8E44AD,
   0xFFE67E22,
   0xFF1ABC9C,
+  0xFF4834D4,
 ];
 
 /// Add/edit form. When [existingCard] is null this creates a new card.
@@ -130,6 +132,7 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
   }
 
   Future<void> _save() async {
+    ref.read(hapticsServiceProvider).selectionClick();
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
@@ -184,6 +187,7 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
   }
 
   Future<void> _delete() async {
+    ref.read(hapticsServiceProvider).selectionClick();
     final existing = widget.existingCard;
     if (existing == null) return;
 
@@ -220,6 +224,7 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
       value.trim().isEmpty ? null : value.trim();
 
   Future<void> _pickCustomColor() async {
+    ref.read(hapticsServiceProvider).selectionClick();
     var pickedColor = Color(_colorArgb);
 
     final confirmed = await showDialog<bool>(
@@ -291,8 +296,10 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
                 ),
               ],
               selected: {_cardType},
-              onSelectionChanged: (selection) =>
-                  setState(() => _cardType = selection.first),
+              onSelectionChanged: (selection) {
+                ref.read(hapticsServiceProvider).selectionClick();
+                setState(() => _cardType = selection.first);
+              },
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -301,7 +308,7 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Required' : null,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             TextFormField(
               controller: _numberController,
               decoration: InputDecoration(
@@ -326,7 +333,7 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
@@ -360,21 +367,21 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             TextFormField(
               controller: _issuerController,
               decoration: const InputDecoration(labelText: 'Issuer / Bank'),
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Required' : null,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             TextFormField(
               controller: _nicknameController,
               decoration: const InputDecoration(labelText: 'Card name'),
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Required' : null,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             _SectionLabel('Appearance'),
             Wrap(
               spacing: 12,
@@ -382,10 +389,13 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
               children: [
                 ..._presetColors.map(
                   (colorArgb) => GestureDetector(
-                    onTap: () => setState(() {
-                      _colorArgb = colorArgb;
-                      _isCustomColor = false;
-                    }),
+                    onTap: () {
+                      ref.read(hapticsServiceProvider).selectionClick();
+                      setState(() {
+                        _colorArgb = colorArgb;
+                        _isCustomColor = false;
+                      });
+                    },
                     child: Container(
                       width: 40,
                       height: 40,
@@ -430,47 +440,47 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             _MiniPreview(colorArgb: _colorArgb),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             _SectionLabel('Rewards & Notes'),
             TextFormField(
               controller: _rewardsController,
               decoration: const InputDecoration(labelText: 'Rewards'),
               maxLines: 2,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             TextFormField(
               controller: _bestForController,
               decoration: const InputDecoration(labelText: 'Best for'),
               maxLines: 2,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             TextFormField(
               controller: _notesController,
               decoration: const InputDecoration(labelText: 'Notes'),
               maxLines: 4,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             _SectionLabel('Links'),
             TextFormField(
               controller: _rewardsUrlController,
               decoration: const InputDecoration(labelText: 'Rewards URL'),
               keyboardType: TextInputType.url,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             TextFormField(
               controller: _paymentUrlController,
               decoration: const InputDecoration(labelText: 'Payment URL'),
               keyboardType: TextInputType.url,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             TextFormField(
               controller: _managementUrlController,
               decoration: const InputDecoration(labelText: 'Management URL'),
               keyboardType: TextInputType.url,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             TextFormField(
               controller: _customerServiceUrlController,
               decoration: const InputDecoration(
@@ -478,7 +488,7 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
               ),
               keyboardType: TextInputType.url,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             _SectionLabel('Custom Fields'),
             ..._customFields.asMap().entries.map((entry) {
               final index = entry.key;
@@ -510,20 +520,24 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
-                      onPressed: () =>
-                          setState(() => _customFields.removeAt(index)),
+                      onPressed: () {
+                        ref.read(hapticsServiceProvider).selectionClick();
+                        setState(() => _customFields.removeAt(index));
+                      },
                     ),
                   ],
                 ),
               );
             }),
             OutlinedButton.icon(
-              onPressed: () =>
-                  setState(() => _customFields.add(const MapEntry('', ''))),
+              onPressed: () {
+                ref.read(hapticsServiceProvider).selectionClick();
+                setState(() => _customFields.add(const MapEntry('', '')));
+              },
               icon: const Icon(Icons.add),
               label: const Text('Add field'),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             _SectionLabel('Groups'),
             Wrap(
               spacing: 8,
@@ -533,13 +547,16 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
                     (g) => FilterChip(
                       label: Text(g.name),
                       selected: _selectedGroupIds.contains(g.id),
-                      onSelected: (selected) => setState(() {
-                        if (selected) {
-                          _selectedGroupIds.add(g.id);
-                        } else {
-                          _selectedGroupIds.remove(g.id);
-                        }
-                      }),
+                      onSelected: (selected) {
+                        ref.read(hapticsServiceProvider).selectionClick();
+                        setState(() {
+                          if (selected) {
+                            _selectedGroupIds.add(g.id);
+                          } else {
+                            _selectedGroupIds.remove(g.id);
+                          }
+                        });
+                      },
                     ),
                   )
                   .toList(),

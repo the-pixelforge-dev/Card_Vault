@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../application/cards/card_list_provider.dart';
 import '../../application/groups/group_provider.dart';
+import '../../application/settings/haptics_provider.dart';
 import '../../domain/card/card_entity.dart';
 import '../card_form/card_form_screen.dart';
 import '../widgets_shared/digital_card_widget.dart';
@@ -14,7 +15,8 @@ class CardDetailScreen extends ConsumerWidget {
 
   final String cardId;
 
-  Future<void> _openUrl(String url) async {
+  Future<void> _openUrl(WidgetRef ref, String url) async {
+    ref.read(hapticsServiceProvider).selectionClick();
     final uri = Uri.tryParse(url);
     if (uri == null) return;
     await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -25,6 +27,7 @@ class CardDetailScreen extends ConsumerWidget {
     WidgetRef ref,
     CardEntity card,
   ) async {
+    ref.read(hapticsServiceProvider).selectionClick();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -77,11 +80,14 @@ class CardDetailScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => CardFormScreen(existingCard: card),
-              ),
-            ),
+            onPressed: () {
+              ref.read(hapticsServiceProvider).selectionClick();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => CardFormScreen(existingCard: card),
+                ),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
@@ -155,7 +161,7 @@ class CardDetailScreen extends ConsumerWidget {
                 children: links
                     .map(
                       (link) => OutlinedButton.icon(
-                        onPressed: () => _openUrl(link.$2),
+                        onPressed: () => _openUrl(ref, link.$2),
                         icon: const Icon(Icons.open_in_new, size: 16),
                         label: Text(link.$1),
                       ),

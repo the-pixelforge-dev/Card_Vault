@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/groups/group_provider.dart';
+import '../../application/settings/haptics_provider.dart';
 import '../../domain/group/group_entity.dart';
 
 const _groupColors = <int>[
@@ -21,6 +22,7 @@ class GroupsScreen extends ConsumerWidget {
     WidgetRef ref, {
     GroupEntity? existing,
   }) async {
+    ref.read(hapticsServiceProvider).selectionClick();
     final controller = TextEditingController(text: existing?.name);
     var colorArgb = existing?.colorArgb ?? _groupColors.first;
 
@@ -117,8 +119,10 @@ class GroupsScreen extends ConsumerWidget {
                   title: Text(group.name),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline),
-                    onPressed: () =>
-                        ref.read(groupListProvider.notifier).remove(group.id),
+                    onPressed: () {
+                      ref.read(hapticsServiceProvider).selectionClick();
+                      ref.read(groupListProvider.notifier).remove(group.id);
+                    },
                   ),
                   onTap: () => _showEditor(context, ref, existing: group),
                 );

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/cards/card_list_provider.dart';
 import '../../application/groups/group_provider.dart';
+import '../../application/settings/haptics_provider.dart';
 import '../../core/security/crypto/export_cipher.dart';
 import '../../domain/card/card_entity.dart';
 import '../../domain/card/card_network.dart';
@@ -96,6 +97,7 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
   );
 
   Future<void> _export() async {
+    ref.read(hapticsServiceProvider).selectionClick();
     final passphrase = await _promptPassphrase(confirm: true);
     if (passphrase == null) return;
 
@@ -132,6 +134,7 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
   }
 
   Future<void> _import() async {
+    ref.read(hapticsServiceProvider).selectionClick();
     final picked = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['cardvault'],

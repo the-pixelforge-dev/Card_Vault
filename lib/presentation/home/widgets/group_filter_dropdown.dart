@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../application/cards/card_filter_provider.dart';
 import '../../../application/cards/card_list_provider.dart';
 import '../../../application/groups/group_provider.dart';
+import '../../../application/settings/haptics_provider.dart';
 import '../../../domain/card/card_network.dart';
 import '../../../domain/card/card_type.dart';
 
@@ -41,7 +42,10 @@ class GroupFilterDropdown extends ConsumerWidget {
 
     return InkWell(
       borderRadius: BorderRadius.circular(12),
-      onTap: () => _openPicker(context, ref),
+      onTap: () {
+        ref.read(hapticsServiceProvider).selectionClick();
+        _openPicker(context, ref);
+      },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
@@ -67,6 +71,7 @@ class GroupFilterDropdown extends ConsumerWidget {
       showDragHandle: true,
       builder: (sheetContext) => _GroupPickerSheet(
         onSelect: (newFilter) {
+          ref.read(hapticsServiceProvider).selectionClick();
           ref.read(activeCardFilterProvider.notifier).set(newFilter);
           Navigator.of(sheetContext).pop();
         },

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/security/lock_state_provider.dart';
+import '../../application/settings/haptics_provider.dart';
 import '../../application/settings/settings_provider.dart';
 import '../../core/haptics/haptics_service.dart';
 import '../../core/theme/app_theme.dart';
@@ -12,14 +14,22 @@ import 'export_import_screen.dart';
 import 'font_import_screen.dart';
 import 'widgets/default_cardholder_name_field.dart';
 
+/// Segmented button labels are given an explicit, slightly smaller text
+/// style — the default text theme wraps a word like "Medium" onto two
+/// lines once three roughly-equal segments share the row.
+const _segmentedLabelStyle = TextStyle(fontSize: 13);
+
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
+
+  void _tap(WidgetRef ref) => ref.read(hapticsServiceProvider).selectionClick();
 
   Future<void> _toggleAppLock(
     BuildContext context,
     WidgetRef ref,
     bool enable,
   ) async {
+    _tap(ref);
     final notifier = ref.read(settingsProvider.notifier);
     final lockNotifier = ref.read(appLockProvider.notifier);
 
@@ -59,12 +69,56 @@ class SettingsScreen extends ConsumerWidget {
     await notifier.setBiometricUnlockEnabled(false);
   }
 
+  Future<void> _pickCustomAccentColor(BuildContext context, WidgetRef ref) async {
+    _tap(ref);
+    final settings = ref.read(settingsProvider);
+    var pickedColor = Color(
+      settings.themeSeedColorArgb ?? AppAccentColors.defaultColor.toARGB32(),
+    );
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Pick an accent color'),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: pickedColor,
+            onColorChanged: (color) => pickedColor = color,
+            enableAlpha: false,
+            labelTypes: const [],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Select'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ref
+          .read(settingsProvider.notifier)
+          .setThemeSeedColor(pickedColor.toARGB32());
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
     final biometricAvailable =
         ref.watch(isBiometricAvailableProvider).value ?? false;
+    final isCustomAccentColor =
+        settings.themeSeedColorArgb != null &&
+        !AppAccentColors.all.any(
+          (c) => c.toARGB32() == settings.themeSeedColorArgb,
+        );
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -79,6 +133,9 @@ class SettingsScreen extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: SegmentedButton<ThemeMode>(
+                  style: SegmentedButton.styleFrom(
+                    textStyle: _segmentedLabelStyle,
+                  ),
                   segments: const [
                     ButtonSegment(
                       value: ThemeMode.system,
@@ -97,8 +154,10 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ],
                   selected: {settings.themeMode},
-                  onSelectionChanged: (selection) =>
-                      notifier.setThemeMode(selection.first),
+                  onSelectionChanged: (selection) {
+                    _tap(ref);
+                    notifier.setThemeMode(selection.first);
+                  },
                 ),
               ),
               const SizedBox(height: 16),
@@ -108,37 +167,68 @@ class SettingsScreen extends ConsumerWidget {
                 child: Wrap(
                   spacing: 12,
                   runSpacing: 12,
-                  children: AppAccentColors.all.map((color) {
-                    final isSelected =
-                        (settings.themeSeedColorArgb ??
-                            AppAccentColors.defaultColor.toARGB32()) ==
-                        color.toARGB32();
-                    return GestureDetector(
-                      onTap: () =>
-                          notifier.setThemeSeedColor(color.toARGB32()),
+                  children: [
+                    ...AppAccentColors.all.map((color) {
+                      final isSelected =
+                          !isCustomAccentColor &&
+                          (settings.themeSeedColorArgb ??
+                                  AppAccentColors.defaultColor.toARGB32()) ==
+                              color.toARGB32();
+                      return GestureDetector(
+                        onTap: () {
+                          _tap(ref);
+                          notifier.setThemeSeedColor(color.toARGB32());
+                        },
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: isSelected
+                                ? Border.all(
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    width: 3,
+                                  )
+                                : null,
+                          ),
+                          child: isSelected
+                              ? const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 18,
+                                )
+                              : null,
+                        ),
+                      );
+                    }),
+                    GestureDetector(
+                      onTap: () => _pickCustomAccentColor(context, ref),
                       child: Container(
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: color,
+                          color: isCustomAccentColor
+                              ? Color(settings.themeSeedColorArgb!)
+                              : Theme.of(context).colorScheme.surfaceContainerHighest,
                           shape: BoxShape.circle,
-                          border: isSelected
-                              ? Border.all(
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                  width: 3,
-                                )
-                              : null,
+                          border: Border.all(
+                            color: isCustomAccentColor
+                                ? Theme.of(context).colorScheme.onSurface
+                                : Theme.of(context).colorScheme.outlineVariant,
+                            width: isCustomAccentColor ? 3 : 1.5,
+                          ),
                         ),
-                        child: isSelected
-                            ? const Icon(
-                                Icons.check,
-                                color: Colors.white,
-                                size: 18,
-                              )
-                            : null,
+                        child: isCustomAccentColor
+                            ? null
+                            : Icon(
+                                Icons.colorize_rounded,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 8),
@@ -161,9 +251,12 @@ class SettingsScreen extends ConsumerWidget {
                   settings.activeFontDisplayName(BundledFonts.inter),
                 ),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const FontImportScreen()),
-                ),
+                onTap: () {
+                  _tap(ref);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const FontImportScreen()),
+                  );
+                },
               ),
             ],
           ),
@@ -183,9 +276,12 @@ class SettingsScreen extends ConsumerWidget {
                   leading: const Icon(Icons.password),
                   title: const Text('Change PIN'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SetPinScreen()),
-                  ),
+                  onTap: () {
+                    _tap(ref);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SetPinScreen()),
+                    );
+                  },
                 ),
                 if (biometricAvailable)
                   SwitchListTile(
@@ -193,7 +289,10 @@ class SettingsScreen extends ConsumerWidget {
                     title: const Text('Unlock with biometrics'),
                     subtitle: const Text('Your PIN always still works'),
                     value: settings.biometricUnlockEnabled,
-                    onChanged: notifier.setBiometricUnlockEnabled,
+                    onChanged: (v) {
+                      _tap(ref);
+                      notifier.setBiometricUnlockEnabled(v);
+                    },
                   ),
                 ListTile(
                   leading: const Icon(Icons.timer_outlined),
@@ -207,7 +306,10 @@ class SettingsScreen extends ConsumerWidget {
                       DropdownMenuItem(value: 300, child: Text('5 minutes')),
                       DropdownMenuItem(value: 900, child: Text('15 minutes')),
                     ],
-                    onChanged: (v) => notifier.setAutoLockAfterSeconds(v!),
+                    onChanged: (v) {
+                      _tap(ref);
+                      notifier.setAutoLockAfterSeconds(v!);
+                    },
                   ),
                 ),
               ],
@@ -222,7 +324,10 @@ class SettingsScreen extends ConsumerWidget {
                 title: const Text('Haptics'),
                 subtitle: const Text('Feel a tick for taps, drags, and reveals'),
                 value: settings.hapticsEnabled,
-                onChanged: notifier.setHapticsEnabled,
+                onChanged: (v) {
+                  _tap(ref);
+                  notifier.setHapticsEnabled(v);
+                },
               ),
               if (settings.hapticsEnabled)
                 ListTile(
@@ -231,6 +336,9 @@ class SettingsScreen extends ConsumerWidget {
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: SegmentedButton<HapticsStrength>(
+                      style: SegmentedButton.styleFrom(
+                        textStyle: _segmentedLabelStyle,
+                      ),
                       segments: HapticsStrength.values
                           .map(
                             (s) => ButtonSegment(
@@ -240,8 +348,10 @@ class SettingsScreen extends ConsumerWidget {
                           )
                           .toList(),
                       selected: {settings.hapticsStrength},
-                      onSelectionChanged: (selection) =>
-                          notifier.setHapticsStrength(selection.first),
+                      onSelectionChanged: (selection) {
+                        _tap(ref);
+                        notifier.setHapticsStrength(selection.first);
+                      },
                     ),
                   ),
                 ),
@@ -260,9 +370,12 @@ class SettingsScreen extends ConsumerWidget {
                 leading: const Icon(Icons.label_outline),
                 title: const Text('Manage Groups'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const GroupsScreen()),
-                ),
+                onTap: () {
+                  _tap(ref);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const GroupsScreen()),
+                  );
+                },
               ),
             ],
           ),
@@ -274,11 +387,14 @@ class SettingsScreen extends ConsumerWidget {
                 leading: const Icon(Icons.import_export),
                 title: const Text('Encrypted Export / Import'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const ExportImportScreen(),
-                  ),
-                ),
+                onTap: () {
+                  _tap(ref);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ExportImportScreen(),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -293,11 +409,14 @@ class SettingsScreen extends ConsumerWidget {
                   'Optional — off by default, no cloud sync',
                 ),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const AdvisorSettingsScreen(),
-                  ),
-                ),
+                onTap: () {
+                  _tap(ref);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const AdvisorSettingsScreen(),
+                    ),
+                  );
+                },
               ),
             ],
           ),

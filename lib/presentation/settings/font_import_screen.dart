@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../application/settings/haptics_provider.dart';
 import '../../application/settings/settings_provider.dart';
 import '../../core/fonts/dynamic_font_loader.dart';
 import '../../core/theme/app_theme.dart';
@@ -23,6 +24,7 @@ class _FontImportScreenState extends ConsumerState<FontImportScreen> {
   bool _importing = false;
 
   Future<void> _importFont() async {
+    ref.read(hapticsServiceProvider).selectionClick();
     final picked = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['ttf', 'otf'],
@@ -74,7 +76,10 @@ class _FontImportScreenState extends ConsumerState<FontImportScreen> {
       appBar: AppBar(title: const Text('Font')),
       body: RadioGroup<String>(
         groupValue: settings.activeFontFamily ?? BundledFonts.inter,
-        onChanged: notifier.setActiveFontFamily,
+        onChanged: (family) {
+          ref.read(hapticsServiceProvider).selectionClick();
+          notifier.setActiveFontFamily(family);
+        },
         child: ListView(
           children: [
             const _Header('Bundled'),
@@ -98,8 +103,10 @@ class _FontImportScreenState extends ConsumerState<FontImportScreen> {
                   leading: Radio<String>(value: font.fontFamily),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline),
-                    onPressed: () =>
-                        notifier.removeImportedFont(font.fontFamily),
+                    onPressed: () {
+                      ref.read(hapticsServiceProvider).selectionClick();
+                      notifier.removeImportedFont(font.fontFamily);
+                    },
                   ),
                 ),
               ),

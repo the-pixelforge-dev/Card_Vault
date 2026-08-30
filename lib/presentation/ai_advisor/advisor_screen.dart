@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/ai_advisor/gemini_advisor_provider.dart';
+import '../../application/settings/haptics_provider.dart';
 
 class AdvisorScreen extends ConsumerStatefulWidget {
   const AdvisorScreen({super.key});
@@ -26,6 +27,7 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
   }
 
   Future<void> _ask() async {
+    ref.read(hapticsServiceProvider).selectionClick();
     final description = _descriptionController.text.trim();
     if (description.isEmpty) return;
 

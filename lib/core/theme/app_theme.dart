@@ -34,6 +34,9 @@ class AppAccentColors {
   static const amber = Color(0xFFF0932B);
   static const plum = Color(0xFF8E44AD);
   static const slate = Color(0xFF2D3436);
+  static const indigo = Color(0xFF4834D4);
+  static const forest = Color(0xFF10AC84);
+  static const coral = Color(0xFFFF6B6B);
 
   static const all = [
     violet,
@@ -46,6 +49,9 @@ class AppAccentColors {
     amber,
     plum,
     slate,
+    indigo,
+    forest,
+    coral,
   ];
 
   static const defaultColor = violet;

@@ -167,24 +167,6 @@ class _CardStackViewState extends ConsumerState<CardStackView>
   @override
   Widget build(BuildContext context) {
     final order = _effectiveOrder;
-    if (order.isEmpty) {
-      if (widget.isFiltered) {
-        return const HollowCardEmptyState(
-          message: 'No cards match your search.',
-        );
-      }
-      return Center(
-        child: Text(
-          'No cards yet.\nTap + to add your first card.',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      );
-    }
-
-    final visibleCount = order.length.clamp(0, _maxVisible);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -192,6 +174,42 @@ class _CardStackViewState extends ConsumerState<CardStackView>
         final cardHeight = cardWidth / cardAspectRatio;
         final stackHeight =
             cardHeight + (_maxVisible - 1) * _depthOffset + 24;
+
+        if (order.isEmpty) {
+          if (widget.isFiltered) {
+            // Sized and positioned to exactly match where the topmost card
+            // would sit (top-left of the stack area, same width/height),
+            // so this reads as "the card slot, empty" rather than a
+            // generic centered message.
+            return SizedBox(
+              height: stackHeight,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: cardWidth,
+                  height: cardHeight,
+                  child: const HollowCardEmptyState(
+                    message: 'No cards match your search.',
+                  ),
+                ),
+              ),
+            );
+          }
+          return SizedBox(
+            height: stackHeight,
+            child: Center(
+              child: Text(
+                'No cards yet.\nTap + to add your first card.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          );
+        }
+
+        final visibleCount = order.length.clamp(0, _maxVisible);
 
         // Defaults to the current front card when no browse gesture is
         // active; while one is active, stays pinned to whichever card

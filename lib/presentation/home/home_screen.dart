@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/ai_advisor/gemini_advisor_provider.dart';
 import '../../application/cards/card_filter_provider.dart';
+import '../../application/settings/haptics_provider.dart';
 import '../../domain/card/card_entity.dart';
 import '../ai_advisor/advisor_screen.dart';
 import '../card_detail/card_detail_screen.dart';
@@ -38,15 +39,21 @@ class HomeScreen extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.auto_awesome_outlined),
               tooltip: 'Which card should I use?',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AdvisorScreen()),
-              ),
+              onPressed: () {
+                ref.read(hapticsServiceProvider).selectionClick();
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AdvisorScreen()),
+                );
+              },
             ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            ),
+            onPressed: () {
+              ref.read(hapticsServiceProvider).selectionClick();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
           ),
         ],
       ),
@@ -75,9 +82,12 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const CardFormScreen()),
-        ),
+        onPressed: () {
+          ref.read(hapticsServiceProvider).selectionClick();
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const CardFormScreen()),
+          );
+        },
         icon: const Icon(Icons.add),
         label: const Text('Add Card'),
       ),
