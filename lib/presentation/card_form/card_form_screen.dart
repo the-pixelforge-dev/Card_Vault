@@ -538,29 +538,43 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
               label: const Text('Add field'),
             ),
             const SizedBox(height: 32),
-            _SectionLabel('Groups'),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: groups
-                  .map(
-                    (g) => FilterChip(
-                      label: Text(g.name),
-                      selected: _selectedGroupIds.contains(g.id),
-                      onSelected: (selected) {
-                        ref.read(hapticsServiceProvider).selectionClick();
-                        setState(() {
-                          if (selected) {
-                            _selectedGroupIds.add(g.id);
-                          } else {
-                            _selectedGroupIds.remove(g.id);
-                          }
-                        });
-                      },
-                    ),
-                  )
-                  .toList(),
+            _SectionLabel(
+              'Groups',
+              tooltip:
+                  'Create groups first in Settings → Manage Groups (e.g. '
+                  'Travel, Dining), then check off as many as apply to this '
+                  'card here.',
             ),
+            if (groups.isEmpty)
+              Text(
+                'No groups yet — create some in Settings → Manage Groups.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: groups
+                    .map(
+                      (g) => FilterChip(
+                        label: Text(g.name),
+                        selected: _selectedGroupIds.contains(g.id),
+                        onSelected: (selected) {
+                          ref.read(hapticsServiceProvider).selectionClick();
+                          setState(() {
+                            if (selected) {
+                              _selectedGroupIds.add(g.id);
+                            } else {
+                              _selectedGroupIds.remove(g.id);
+                            }
+                          });
+                        },
+                      ),
+                    )
+                    .toList(),
+              ),
             const SizedBox(height: 32),
             FilledButton(
               onPressed: _save,
@@ -574,20 +588,38 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
 }
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
+  const _SectionLabel(this.text, {this.tooltip});
   final String text;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.titleSmall?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: theme.colorScheme.primary,
+    );
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-      ),
+      child: tooltip == null
+          ? Text(text, style: style)
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(text, style: style),
+                const SizedBox(width: 4),
+                Tooltip(
+                  message: tooltip!,
+                  triggerMode: TooltipTriggerMode.tap,
+                  child: Icon(
+                    Icons.help_outline_rounded,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

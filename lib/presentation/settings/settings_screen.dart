@@ -10,6 +10,7 @@ import '../../core/theme/app_theme.dart';
 import '../ai_advisor/advisor_settings_screen.dart';
 import '../groups/groups_screen.dart';
 import '../lock/set_pin_screen.dart';
+import '../lock/verify_pin_screen.dart';
 import 'export_import_screen.dart';
 import 'font_import_screen.dart';
 import 'widgets/default_cardholder_name_field.dart';
@@ -23,6 +24,15 @@ class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   void _tap(WidgetRef ref) => ref.read(hapticsServiceProvider).selectionClick();
+
+  /// Gates a sensitive Settings action behind re-entering the current PIN.
+  /// Returns true only if the user proved they know it.
+  Future<bool> _verifyCurrentPin(BuildContext context, {String? reason}) async {
+    final confirmed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => VerifyPinScreen(reason: reason)),
+    );
+    return confirmed == true;
+  }
 
   Future<void> _toggleAppLock(
     BuildContext context,
@@ -43,6 +53,14 @@ class SettingsScreen extends ConsumerWidget {
       return;
     }
 
+    if (!context.mounted) return;
+    final verified = await _verifyCurrentPin(
+      context,
+      reason: 'to turn off App Lock',
+    );
+    if (!verified) return;
+
+    if (!context.mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -67,6 +85,36 @@ class SettingsScreen extends ConsumerWidget {
     await lockNotifier.clearPin();
     await notifier.setBiometricLockEnabled(false);
     await notifier.setBiometricUnlockEnabled(false);
+  }
+
+  Future<void> _changePin(BuildContext context, WidgetRef ref) async {
+    _tap(ref);
+    final verified = await _verifyCurrentPin(
+      context,
+      reason: 'to change it',
+    );
+    if (!verified || !context.mounted) return;
+
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const SetPinScreen()),
+    );
+  }
+
+  Future<void> _toggleBiometricUnlock(
+    BuildContext context,
+    WidgetRef ref,
+    bool enable,
+  ) async {
+    _tap(ref);
+    final verified = await _verifyCurrentPin(
+      context,
+      reason: enable
+          ? 'to enable biometric unlock'
+          : 'to disable biometric unlock',
+    );
+    if (!verified) return;
+
+    await ref.read(settingsProvider.notifier).setBiometricUnlockEnabled(enable);
   }
 
   Future<void> _pickCustomAccentColor(BuildContext context, WidgetRef ref) async {
@@ -276,12 +324,7 @@ class SettingsScreen extends ConsumerWidget {
                   leading: const Icon(Icons.password),
                   title: const Text('Change PIN'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    _tap(ref);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SetPinScreen()),
-                    );
-                  },
+                  onTap: () => _changePin(context, ref),
                 ),
                 if (biometricAvailable)
                   SwitchListTile(
@@ -289,10 +332,7 @@ class SettingsScreen extends ConsumerWidget {
                     title: const Text('Unlock with biometrics'),
                     subtitle: const Text('Your PIN always still works'),
                     value: settings.biometricUnlockEnabled,
-                    onChanged: (v) {
-                      _tap(ref);
-                      notifier.setBiometricUnlockEnabled(v);
-                    },
+                    onChanged: (v) => _toggleBiometricUnlock(context, ref, v),
                   ),
                 ListTile(
                   leading: const Icon(Icons.timer_outlined),
