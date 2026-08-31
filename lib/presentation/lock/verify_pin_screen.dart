@@ -19,10 +19,18 @@ const _pinLength = 6;
 /// backs out. Carries the same "Forgot PIN?" reset escape hatch as the
 /// main lock screen so a legitimate owner is never stuck.
 class VerifyPinScreen extends ConsumerStatefulWidget {
-  const VerifyPinScreen({super.key, this.reason});
+  const VerifyPinScreen({super.key, this.reason, this.onVerified});
 
   /// Optional context shown above the PIN pad (e.g. "to change your PIN").
   final String? reason;
+
+  /// If set, called instead of popping `true` once the PIN is verified —
+  /// its return value replaces this screen via `pushReplacement`. Use this
+  /// when success should lead straight into another screen (e.g. Change
+  /// PIN); it keeps that as a single transition instead of popping back to
+  /// the caller and then pushing again, which flashes the caller screen
+  /// on-screen for a frame in between.
+  final WidgetBuilder? onVerified;
 
   @override
   ConsumerState<VerifyPinScreen> createState() => _VerifyPinScreenState();
@@ -55,7 +63,14 @@ class _VerifyPinScreenState extends ConsumerState<VerifyPinScreen> {
 
     if (success) {
       ref.read(hapticsServiceProvider).mediumImpact();
-      Navigator.of(context).pop(true);
+      final onVerified = widget.onVerified;
+      if (onVerified != null) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: onVerified),
+        );
+      } else {
+        Navigator.of(context).pop(true);
+      }
       return;
     }
 
@@ -84,11 +99,14 @@ class _VerifyPinScreenState extends ConsumerState<VerifyPinScreen> {
           children: [
             Icon(Icons.lock_outline, size: 40, color: theme.colorScheme.primary),
             const SizedBox(height: 16),
-            Text(
-              'Enter your current PIN'
-              '${widget.reason != null ? ' ${widget.reason}' : ''}',
-              style: theme.textTheme.titleMedium,
-              textAlign: TextAlign.center,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                'Enter your current PIN'
+                '${widget.reason != null ? ' ${widget.reason}' : ''}',
+                style: theme.textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
             ),
             const SizedBox(height: 8),
             SizedBox(

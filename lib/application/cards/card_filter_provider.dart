@@ -1,6 +1,9 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/cards/card_stack_style.dart';
 import '../../domain/card/card_entity.dart';
+import '../settings/settings_provider.dart';
 import 'card_list_provider.dart';
 
 part 'card_filter_provider.g.dart';
@@ -52,10 +55,27 @@ class CardFilter {
   }
 }
 
+/// Maps the "Default Stack" setting to the filter it represents.
+CardFilter _filterForDefault(DefaultCardStackFilter f) {
+  switch (f) {
+    case DefaultCardStackFilter.all:
+      return const CardFilter();
+    case DefaultCardStackFilter.credit:
+      return const CardFilter(mode: GroupingMode.cardType, value: 'credit');
+    case DefaultCardStackFilter.debit:
+      return const CardFilter(mode: GroupingMode.cardType, value: 'debit');
+  }
+}
+
 @riverpod
 class ActiveCardFilter extends _$ActiveCardFilter {
   @override
-  CardFilter build() => const CardFilter();
+  CardFilter build() {
+    final defaultFilter = ref.watch(
+      settingsProvider.select((s) => s.defaultStackFilter),
+    );
+    return _filterForDefault(defaultFilter);
+  }
 
   void set(CardFilter filter) =>
       state = filter.copyWith(searchQuery: () => state.searchQuery);

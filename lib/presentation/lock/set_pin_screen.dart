@@ -83,12 +83,16 @@ class _SetPinScreenState extends ConsumerState<SetPinScreen> {
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            Text(
-              _error ?? 'This unlocks Card Vault even without biometrics.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: _error != null
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.onSurfaceVariant,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                _error ?? 'This unlocks Card Vault even without biometrics.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: _error != null
+                      ? theme.colorScheme.error
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
             const SizedBox(height: 32),

@@ -28,13 +28,18 @@ class AppSettingsHiveModelAdapter extends TypeAdapter<AppSettingsHiveModel> {
       defaultCardholderName: fields[8] as String?,
       hapticsEnabled: fields[9] == null ? true : fields[9] as bool,
       hapticsStrength: fields[10] == null ? 'medium' : fields[10] as String,
+      cardStackDepthStyle: fields[11] == null ? 'shrink' : fields[11] as String,
+      cardStackGlowIntensity: fields[12] == null
+          ? 1.0
+          : (fields[12] as num).toDouble(),
+      defaultStackFilter: fields[13] == null ? 'all' : fields[13] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettingsHiveModel obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.themeMode)
       ..writeByte(1)
@@ -56,7 +61,13 @@ class AppSettingsHiveModelAdapter extends TypeAdapter<AppSettingsHiveModel> {
       ..writeByte(9)
       ..write(obj.hapticsEnabled)
       ..writeByte(10)
-      ..write(obj.hapticsStrength);
+      ..write(obj.hapticsStrength)
+      ..writeByte(11)
+      ..write(obj.cardStackDepthStyle)
+      ..writeByte(12)
+      ..write(obj.cardStackGlowIntensity)
+      ..writeByte(13)
+      ..write(obj.defaultStackFilter);
   }
 
   @override

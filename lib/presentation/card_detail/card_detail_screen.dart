@@ -75,7 +75,15 @@ class CardDetailScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
+      // The card's own glow is meant to bleed up past its top edge, but a
+      // normal opaque app bar would hard-clip it right at the seam. Making
+      // the app bar transparent and extending the body behind it lets that
+      // glow carry on underneath instead, so it reads as one continuous
+      // surface rather than the card looking cut off.
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         title: Text(card.nickname),
         actions: [
           IconButton(
@@ -91,19 +99,22 @@ class CardDetailScreen extends ConsumerWidget {
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
+            color: Theme.of(context).colorScheme.error,
             onPressed: () => _confirmDelete(context, ref, card),
           ),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          MediaQuery.of(context).padding.top + kToolbarHeight + 20,
+          20,
+          20,
+        ),
         children: [
-          Hero(
-            tag: 'card-${card.id}',
-            child: FlipCardWidget(
-              front: DigitalCardFront(card: card),
-              back: DigitalCardBack(card: card),
-            ),
+          FlipCardWidget(
+            front: DigitalCardFront(card: card),
+            back: DigitalCardBack(card: card),
           ),
           const SizedBox(height: 8),
           Center(
@@ -217,7 +228,6 @@ class _DetailSection extends StatelessWidget {
         decoration: BoxDecoration(
           color: colorScheme.primaryContainer.withValues(alpha: 0.28),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colorScheme.outlineVariant),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

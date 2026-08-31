@@ -9,7 +9,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/cards/card_list_provider.dart';
 import '../../application/groups/group_provider.dart';
 import '../../application/settings/haptics_provider.dart';
+import '../../application/settings/settings_provider.dart';
+import '../../application/settings/settings_state.dart';
+import '../../core/cards/card_stack_style.dart';
+import '../../core/haptics/haptics_service.dart';
 import '../../core/security/crypto/export_cipher.dart';
+import '../../data/settings/imported_font_hive_model.dart';
 import '../../domain/card/card_entity.dart';
 import '../../domain/card/card_network.dart';
 import '../../domain/card/card_type.dart';
@@ -97,6 +102,72 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
     sortOrder: j['sortOrder'] as int,
   );
 
+  // App Lock (on/off, biometric unlock, auto-lock timeout) is deliberately
+  // left out here — see restoreBackedUpSettings for why — as is the Gemini
+  // API key, which never lives in this settings store at all.
+  Map<String, Object?> _settingsToJson(SettingsState s) => {
+    'themeMode': s.themeMode.name,
+    'uiScaleFactor': s.uiScaleFactor,
+    'activeFontFamily': s.activeFontFamily,
+    'importedFonts': s.importedFonts
+        .map(
+          (f) => {
+            'fontFamily': f.fontFamily,
+            'filePath': f.filePath,
+            'displayName': f.displayName,
+          },
+        )
+        .toList(),
+    'themeSeedColorArgb': s.themeSeedColorArgb,
+    'defaultCardholderName': s.defaultCardholderName,
+    'hapticsEnabled': s.hapticsEnabled,
+    'hapticsStrength': s.hapticsStrength.name,
+    'cardStackDepthStyle': s.cardStackDepthStyle.name,
+    'cardStackGlowIntensity': s.cardStackGlowIntensity,
+    'defaultStackFilter': s.defaultStackFilter.name,
+  };
+
+  Future<void> _applySettingsJson(Map<String, Object?> j) async {
+    final current = ref.read(settingsProvider);
+    await ref
+        .read(settingsProvider.notifier)
+        .restoreBackedUpSettings(
+          themeMode: ThemeMode.values.byName(
+            j['themeMode'] as String? ?? current.themeMode.name,
+          ),
+          uiScaleFactor:
+              (j['uiScaleFactor'] as num?)?.toDouble() ??
+              current.uiScaleFactor,
+          activeFontFamily: j['activeFontFamily'] as String?,
+          importedFonts: (j['importedFonts'] as List? ?? const [])
+              .map(
+                (e) => ImportedFontHiveModel(
+                  fontFamily: (e as Map)['fontFamily'] as String,
+                  filePath: e['filePath'] as String,
+                  displayName: e['displayName'] as String,
+                ),
+              )
+              .toList(),
+          themeSeedColorArgb: (j['themeSeedColorArgb'] as num?)?.toInt(),
+          defaultCardholderName: j['defaultCardholderName'] as String?,
+          hapticsEnabled: j['hapticsEnabled'] as bool? ?? current.hapticsEnabled,
+          hapticsStrength: HapticsStrength.values.byName(
+            j['hapticsStrength'] as String? ?? current.hapticsStrength.name,
+          ),
+          cardStackDepthStyle: CardStackDepthStyle.values.byName(
+            j['cardStackDepthStyle'] as String? ??
+                current.cardStackDepthStyle.name,
+          ),
+          cardStackGlowIntensity:
+              (j['cardStackGlowIntensity'] as num?)?.toDouble() ??
+              current.cardStackGlowIntensity,
+          defaultStackFilter: DefaultCardStackFilter.values.byName(
+            j['defaultStackFilter'] as String? ??
+                current.defaultStackFilter.name,
+          ),
+        );
+  }
+
   Future<void> _export() async {
     ref.read(hapticsServiceProvider).selectionClick();
     final passphrase = await _promptPassphrase(confirm: true);
@@ -110,9 +181,11 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
     try {
       final cards = ref.read(cardListProvider);
       final groups = ref.read(groupListProvider);
+      final settings = ref.read(settingsProvider);
       final payload = jsonEncode({
         'cards': cards.map(_cardToJson).toList(),
         'groups': groups.map(_groupToJson).toList(),
+        'settings': _settingsToJson(settings),
       });
 
       const cipher = ExportCipher();
@@ -208,6 +281,11 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
         }
       }
 
+      final settingsJson = decoded['settings'] as Map<String, Object?>?;
+      if (settingsJson != null) {
+        await _applySettingsJson(settingsJson);
+      }
+
       setState(
         () => _status = skipped == 0
             ? 'Imported $imported card(s).'
@@ -300,9 +378,12 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
         children: [
           Text(
             'Export creates an AES-256-GCM encrypted .cardvault file '
-            'protected by a passphrase you choose. It never leaves this '
-            'device unless you move it yourself, and your Gemini API key '
-            '(if set) is never included.',
+            'protected by a passphrase you choose. It includes your cards, '
+            'groups, and app settings (theme, font, haptics, card stack '
+            'style, and more). It never leaves this device unless you move '
+            'it yourself. Your Gemini API key and App Lock settings (PIN, '
+            'biometrics, auto-lock) stay local to this device and are '
+            'never included.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 24),

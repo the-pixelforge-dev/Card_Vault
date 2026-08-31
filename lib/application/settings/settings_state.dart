@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/cards/card_stack_style.dart';
 import '../../core/haptics/haptics_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/settings/imported_font_hive_model.dart';
@@ -19,6 +20,9 @@ class SettingsState {
     required this.defaultCardholderName,
     required this.hapticsEnabled,
     required this.hapticsStrength,
+    required this.cardStackDepthStyle,
+    required this.cardStackGlowIntensity,
+    required this.defaultStackFilter,
   });
 
   factory SettingsState.fromHiveModel(AppSettingsHiveModel m) {
@@ -34,6 +38,13 @@ class SettingsState {
       defaultCardholderName: m.defaultCardholderName,
       hapticsEnabled: m.hapticsEnabled,
       hapticsStrength: HapticsStrength.values.byName(m.hapticsStrength),
+      cardStackDepthStyle: CardStackDepthStyle.values.byName(
+        m.cardStackDepthStyle,
+      ),
+      cardStackGlowIntensity: m.cardStackGlowIntensity,
+      defaultStackFilter: DefaultCardStackFilter.values.byName(
+        m.defaultStackFilter,
+      ),
     );
   }
 
@@ -48,6 +59,9 @@ class SettingsState {
   final String? defaultCardholderName;
   final bool hapticsEnabled;
   final HapticsStrength hapticsStrength;
+  final CardStackDepthStyle cardStackDepthStyle;
+  final double cardStackGlowIntensity;
+  final DefaultCardStackFilter defaultStackFilter;
 
   /// The display name shown in Settings for the active font — the bundled
   /// family name itself, or the human-readable name of an imported font
@@ -73,6 +87,9 @@ class SettingsState {
     defaultCardholderName: defaultCardholderName,
     hapticsEnabled: hapticsEnabled,
     hapticsStrength: hapticsStrength.name,
+    cardStackDepthStyle: cardStackDepthStyle.name,
+    cardStackGlowIntensity: cardStackGlowIntensity,
+    defaultStackFilter: defaultStackFilter.name,
   );
 
   SettingsState copyWith({
@@ -87,6 +104,9 @@ class SettingsState {
     String? Function()? defaultCardholderName,
     bool? hapticsEnabled,
     HapticsStrength? hapticsStrength,
+    CardStackDepthStyle? cardStackDepthStyle,
+    double? cardStackGlowIntensity,
+    DefaultCardStackFilter? defaultStackFilter,
   }) {
     return SettingsState(
       themeMode: themeMode ?? this.themeMode,
@@ -108,6 +128,10 @@ class SettingsState {
           : this.defaultCardholderName,
       hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
       hapticsStrength: hapticsStrength ?? this.hapticsStrength,
+      cardStackDepthStyle: cardStackDepthStyle ?? this.cardStackDepthStyle,
+      cardStackGlowIntensity:
+          cardStackGlowIntensity ?? this.cardStackGlowIntensity,
+      defaultStackFilter: defaultStackFilter ?? this.defaultStackFilter,
     );
   }
 }

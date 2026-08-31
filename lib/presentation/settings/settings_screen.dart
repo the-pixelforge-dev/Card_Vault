@@ -5,20 +5,36 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/security/lock_state_provider.dart';
 import '../../application/settings/haptics_provider.dart';
 import '../../application/settings/settings_provider.dart';
+import '../../core/cards/card_stack_style.dart';
 import '../../core/haptics/haptics_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../ai_advisor/advisor_settings_screen.dart';
 import '../groups/groups_screen.dart';
 import '../lock/set_pin_screen.dart';
 import '../lock/verify_pin_screen.dart';
+import '../widgets_shared/info_tooltip_icon.dart';
 import 'export_import_screen.dart';
 import 'font_import_screen.dart';
 import 'widgets/default_cardholder_name_field.dart';
 
-/// Segmented button labels are given an explicit, slightly smaller text
-/// style — the default text theme wraps a word like "Medium" onto two
-/// lines once three roughly-equal segments share the row.
-const _segmentedLabelStyle = TextStyle(fontSize: 13);
+/// Segmented button labels are given a slightly smaller text style, derived
+/// from the theme's label style so the app's chosen font still applies.
+TextStyle _segmentedLabelStyle(BuildContext context) {
+  final base = Theme.of(context).textTheme.labelLarge ?? const TextStyle();
+  return base.copyWith(fontSize: 13);
+}
+
+/// Shrinks a segmented button label to fit on a single line regardless of
+/// how wide the active font renders it, instead of wrapping or truncating.
+class _SegmentedLabel extends StatelessWidget {
+  const _SegmentedLabel(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(fit: BoxFit.scaleDown, child: Text(text));
+  }
+}
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -89,14 +105,17 @@ class SettingsScreen extends ConsumerWidget {
 
   Future<void> _changePin(BuildContext context, WidgetRef ref) async {
     _tap(ref);
-    final verified = await _verifyCurrentPin(
-      context,
-      reason: 'to change it',
-    );
-    if (!verified || !context.mounted) return;
-
+    // VerifyPinScreen replaces itself with SetPinScreen directly on
+    // success, rather than popping back to Settings and pushing from here
+    // — that pop-then-push sequence flashed Settings on screen for a frame
+    // in between.
     await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const SetPinScreen()),
+      MaterialPageRoute(
+        builder: (_) => VerifyPinScreen(
+          reason: 'to change it',
+          onVerified: (_) => const SetPinScreen(),
+        ),
+      ),
     );
   }
 
@@ -182,22 +201,22 @@ class SettingsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: SegmentedButton<ThemeMode>(
                   style: SegmentedButton.styleFrom(
-                    textStyle: _segmentedLabelStyle,
+                    textStyle: _segmentedLabelStyle(context),
                   ),
                   segments: const [
                     ButtonSegment(
                       value: ThemeMode.system,
-                      label: Text('System'),
+                      label: _SegmentedLabel('System'),
                       icon: Icon(Icons.brightness_auto_outlined),
                     ),
                     ButtonSegment(
                       value: ThemeMode.light,
-                      label: Text('Light'),
+                      label: _SegmentedLabel('Light'),
                       icon: Icon(Icons.light_mode_outlined),
                     ),
                     ButtonSegment(
                       value: ThemeMode.dark,
-                      label: Text('Dark'),
+                      label: _SegmentedLabel('Dark'),
                       icon: Icon(Icons.dark_mode_outlined),
                     ),
                   ],
@@ -341,7 +360,7 @@ class SettingsScreen extends ConsumerWidget {
                     children: [
                       const Text('Auto-lock after'),
                       const SizedBox(width: 4),
-                      Tooltip(
+                      const InfoTooltipIcon(
                         message:
                             'How long Card Vault can sit in the background '
                             'before you have to unlock it again. '
@@ -350,16 +369,11 @@ class SettingsScreen extends ConsumerWidget {
                             'setting gives you a grace period to switch '
                             'apps and come right back without unlocking '
                             'again.',
-                        triggerMode: TooltipTriggerMode.tap,
-                        child: Icon(
-                          Icons.help_outline_rounded,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
                       ),
                     ],
                   ),
                   trailing: DropdownButton<int>(
+                    borderRadius: BorderRadius.circular(16),
                     value: settings.autoLockAfterSeconds,
                     items: const [
                       DropdownMenuItem(value: 0, child: Text('Immediately')),
@@ -395,28 +409,86 @@ class SettingsScreen extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(Icons.tune),
                   title: const Text('Strength'),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: SegmentedButton<HapticsStrength>(
-                      style: SegmentedButton.styleFrom(
-                        textStyle: _segmentedLabelStyle,
-                      ),
-                      segments: HapticsStrength.values
-                          .map(
-                            (s) => ButtonSegment(
-                              value: s,
-                              label: Text(s.displayName),
-                            ),
-                          )
-                          .toList(),
-                      selected: {settings.hapticsStrength},
-                      onSelectionChanged: (selection) {
-                        _tap(ref);
-                        notifier.setHapticsStrength(selection.first);
-                      },
-                    ),
+                  subtitle: Slider(
+                    value: HapticsStrength.values
+                        .indexOf(settings.hapticsStrength)
+                        .toDouble(),
+                    min: 0,
+                    max: (HapticsStrength.values.length - 1).toDouble(),
+                    divisions: HapticsStrength.values.length - 1,
+                    label: settings.hapticsStrength.displayName,
+                    onChanged: (v) {
+                      _tap(ref);
+                      notifier.setHapticsStrength(
+                        HapticsStrength.values[v.round()],
+                      );
+                    },
                   ),
                 ),
+            ],
+          ),
+          _SettingsSection(
+            title: 'Card Stack',
+            icon: Icons.layers_outlined,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.filter_alt_outlined),
+                title: const Text('Default Stack'),
+                subtitle: const Text('Default home screen card type'),
+                trailing: DropdownButton<DefaultCardStackFilter>(
+                  borderRadius: BorderRadius.circular(16),
+                  value: settings.defaultStackFilter,
+                  items: DefaultCardStackFilter.values
+                      .map(
+                        (f) => DropdownMenuItem(
+                          value: f,
+                          child: Text(f.displayName),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (f) {
+                    _tap(ref);
+                    notifier.setDefaultStackFilter(f!);
+                  },
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.layers_outlined),
+                title: const Text('Depth Style'),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: SegmentedButton<CardStackDepthStyle>(
+                    style: SegmentedButton.styleFrom(
+                      textStyle: _segmentedLabelStyle(context),
+                    ),
+                    segments: CardStackDepthStyle.values
+                        .map(
+                          (s) => ButtonSegment(
+                            value: s,
+                            label: _SegmentedLabel(s.displayName),
+                          ),
+                        )
+                        .toList(),
+                    selected: {settings.cardStackDepthStyle},
+                    onSelectionChanged: (selection) {
+                      _tap(ref);
+                      notifier.setCardStackDepthStyle(selection.first);
+                    },
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.blur_on),
+                title: const Text('Glow Intensity'),
+                subtitle: Slider(
+                  value: settings.cardStackGlowIntensity,
+                  min: 0,
+                  max: 1,
+                  divisions: 10,
+                  label: '${(settings.cardStackGlowIntensity * 100).round()}%',
+                  onChanged: notifier.setCardStackGlowIntensity,
+                ),
+              ),
             ],
           ),
           _SettingsSection(
@@ -461,7 +533,7 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
           _SettingsSection(
-            title: 'AI Purchase Advisor',
+            title: 'Card Sense',
             icon: Icons.auto_awesome_outlined,
             children: [
               ListTile(

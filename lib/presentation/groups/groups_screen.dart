@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/groups/group_provider.dart';
 import '../../application/settings/haptics_provider.dart';
 import '../../domain/group/group_entity.dart';
+import '../widgets_shared/blurred_dialog.dart';
 
 const _groupColors = <int>[
   0xFF6C5CE7,
@@ -12,6 +13,10 @@ const _groupColors = <int>[
   0xFFE17055,
   0xFFD63031,
   0xFFE84393,
+  0xFF00CEC9,
+  0xFFF0932B,
+  0xFF8E44AD,
+  0xFF4834D4,
 ];
 
 class GroupsScreen extends ConsumerWidget {
@@ -26,7 +31,7 @@ class GroupsScreen extends ConsumerWidget {
     final controller = TextEditingController(text: existing?.name);
     var colorArgb = existing?.colorArgb ?? _groupColors.first;
 
-    await showDialog<void>(
+    await showBlurredDialog<void>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
@@ -40,26 +45,38 @@ class GroupsScreen extends ConsumerWidget {
                 decoration: const InputDecoration(labelText: 'Name'),
               ),
               const SizedBox(height: 16),
-              Wrap(
-                spacing: 10,
-                children: _groupColors
-                    .map(
-                      (c) => GestureDetector(
-                        onTap: () => setDialogState(() => colorArgb = c),
-                        child: CircleAvatar(
-                          backgroundColor: Color(c),
-                          radius: 16,
-                          child: colorArgb == c
-                              ? const Icon(
-                                  Icons.check,
-                                  color: Colors.white,
-                                  size: 16,
-                                )
-                              : null,
-                        ),
-                      ),
-                    )
-                    .toList(),
+              Builder(
+                builder: (context) {
+                  Widget swatch(int c) => GestureDetector(
+                    onTap: () => setDialogState(() => colorArgb = c),
+                    child: CircleAvatar(
+                      backgroundColor: Color(c),
+                      radius: 16,
+                      child: colorArgb == c
+                          ? const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 16,
+                            )
+                          : null,
+                    ),
+                  );
+
+                  Widget row(List<int> colors) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: colors.map(swatch).toList(),
+                    ),
+                  );
+
+                  return Column(
+                    children: [
+                      row(_groupColors.sublist(0, 5)),
+                      row(_groupColors.sublist(5, 10)),
+                    ],
+                  );
+                },
               ),
             ],
           ),

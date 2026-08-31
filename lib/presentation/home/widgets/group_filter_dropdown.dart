@@ -5,8 +5,19 @@ import '../../../application/cards/card_filter_provider.dart';
 import '../../../application/cards/card_list_provider.dart';
 import '../../../application/groups/group_provider.dart';
 import '../../../application/settings/haptics_provider.dart';
+import '../../../domain/card/card_entity.dart';
 import '../../../domain/card/card_network.dart';
 import '../../../domain/card/card_type.dart';
+
+/// How many cards match [filter], ignoring any concurrent free-text search
+/// — this describes the grouping criterion itself (e.g. "Credit Cards"),
+/// not how many of those happen to also match whatever's in the search box
+/// right now.
+int _countFor(List<CardEntity> cards, CardFilter filter) {
+  if (filter.mode == GroupingMode.all) return cards.length;
+  final groupOnly = CardFilter(mode: filter.mode, value: filter.value);
+  return cards.where(groupOnly.matches).length;
+}
 
 class GroupFilterDropdown extends ConsumerWidget {
   const GroupFilterDropdown({super.key});
@@ -16,9 +27,11 @@ class GroupFilterDropdown extends ConsumerWidget {
       case GroupingMode.all:
         return 'All Cards';
       case GroupingMode.cardType:
-        return filter.value != null
-            ? CardType.values.byName(filter.value!).displayName
-            : 'Card Type';
+        return switch (filter.value) {
+          'credit' => 'Credit Cards',
+          'debit' => 'Debit Cards',
+          _ => 'Card Type',
+        };
       case GroupingMode.issuer:
         return filter.value ?? 'Issuer';
       case GroupingMode.network:
@@ -39,6 +52,7 @@ class GroupFilterDropdown extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(activeCardFilterProvider);
+    final cards = ref.watch(cardListProvider);
 
     return InkWell(
       borderRadius: BorderRadius.circular(12),
@@ -51,10 +65,14 @@ class GroupFilterDropdown extends ConsumerWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              _labelFor(ref, filter),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+            Flexible(
+              child: Text(
+                '${_labelFor(ref, filter)} (${_countFor(cards, filter)})',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             const SizedBox(width: 4),
@@ -91,6 +109,11 @@ class _GroupPickerSheet extends ConsumerWidget {
     final groups = ref.watch(groupListProvider);
     final theme = Theme.of(context);
 
+    final creditCount = cards
+        .where((c) => c.cardType == CardType.credit)
+        .length;
+    final debitCount = cards.where((c) => c.cardType == CardType.debit).length;
+
     final issuers =
         cards
             .map((c) => c.issuerName.trim())
@@ -118,19 +141,19 @@ class _GroupPickerSheet extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ListTile(
-              title: const Text('All Cards'),
+              title: Text('All Cards (${cards.length})'),
               leading: const Icon(Icons.grid_view_rounded),
               onTap: () => onSelect(const CardFilter()),
             ),
             ListTile(
-              title: const Text('Credit Cards'),
+              title: Text('Credit Cards ($creditCount)'),
               leading: const Icon(Icons.credit_card_rounded),
               onTap: () => onSelect(
                 const CardFilter(mode: GroupingMode.cardType, value: 'credit'),
               ),
             ),
             ListTile(
-              title: const Text('Debit Cards'),
+              title: Text('Debit Cards ($debitCount)'),
               leading: const Icon(Icons.payments_outlined),
               onTap: () => onSelect(
                 const CardFilter(mode: GroupingMode.cardType, value: 'debit'),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/settings/settings_provider.dart';
+import '../../widgets_shared/info_tooltip_icon.dart';
 
 /// A preference text field with a persistent controller — plain
 /// `TextField`s inline in a stateless settings screen would reset on every
@@ -50,16 +51,10 @@ class _DefaultCardholderNameFieldState
                 ),
               ),
               const SizedBox(width: 4),
-              Tooltip(
+              const InfoTooltipIcon(
                 message:
                     'Pre-fills new cards — you can still change it '
                     'any time.',
-                triggerMode: TooltipTriggerMode.tap,
-                child: Icon(
-                  Icons.help_outline_rounded,
-                  size: 16,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
               ),
             ],
           ),

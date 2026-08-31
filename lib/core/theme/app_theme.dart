@@ -84,7 +84,7 @@ class AppTheme {
       brightness: brightness,
     );
 
-    return ThemeData(
+    final theme = ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colorScheme,
@@ -134,6 +134,18 @@ class AppTheme {
           TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
         },
+      ),
+    );
+
+    return theme.copyWith(
+      // Smaller than the Material default (bodyMedium) so the one-line
+      // explainer under a setting reads clearly as secondary to its title,
+      // rather than competing with it.
+      listTileTheme: ListTileThemeData(
+        subtitleTextStyle: theme.textTheme.bodySmall?.copyWith(
+          fontSize: 10,
+          color: colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }

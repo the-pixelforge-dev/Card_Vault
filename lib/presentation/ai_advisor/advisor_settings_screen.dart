@@ -45,7 +45,7 @@ class _AdvisorSettingsScreenState extends ConsumerState<AdvisorSettingsScreen> {
     final apiKeyAsync = ref.watch(geminiApiKeyProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('AI Purchase Advisor')),
+      appBar: AppBar(title: const Text('Card Sense')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

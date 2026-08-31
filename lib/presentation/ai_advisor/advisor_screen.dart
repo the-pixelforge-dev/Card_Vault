@@ -56,7 +56,7 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Which card should I use?')),
+      appBar: AppBar(title: const Text('Card Sense')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

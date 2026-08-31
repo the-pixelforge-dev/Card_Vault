@@ -16,6 +16,8 @@ import '../../domain/card/cvv_validator.dart';
 import '../../domain/card/expiry_validator.dart';
 import '../../domain/card/luhn_validator.dart';
 import '../widgets_shared/card_visual_style.dart';
+import '../widgets_shared/info_tooltip_icon.dart';
+import 'card_number_input_formatter.dart';
 import 'expiry_input_formatter.dart';
 
 const _presetColors = <int>[
@@ -62,6 +64,11 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
   late final TextEditingController _notesController;
 
   CardNetwork _network = CardNetwork.unknown;
+  /// Once true, [_onNumberChanged] stops overwriting [_network] — some
+  /// networks (notably RuPay cards co-badged onto JCB's own numbering
+  /// range) can't be told apart from the digits alone, so a manual pick
+  /// has to stick instead of being silently re-guessed on every keystroke.
+  bool _networkManuallySet = false;
   CardType _cardType = CardType.credit;
   int _colorArgb = _presetColors.first;
   bool _isCustomColor = false;
@@ -78,7 +85,11 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
       text: card?.cardholderName ??
           ref.read(settingsProvider).defaultCardholderName,
     );
-    _numberController = TextEditingController(text: card?.cardNumber);
+    _numberController = TextEditingController(
+      text: card == null
+          ? null
+          : CardNumberInputFormatter.format(card.cardNumber),
+    );
     _expiryController = TextEditingController(text: card?.expiryMonthYear);
     _cvvController = TextEditingController(text: card?.cvv);
     _issuerController = TextEditingController(text: card?.issuerName);
@@ -97,6 +108,10 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
 
     _network = card?.network ??
         CardNetworkDetector.detect(_numberController.text);
+    // Trust whatever network is already saved on an existing card — it may
+    // have been a manual correction — rather than silently re-guessing it
+    // the moment the number field is touched (e.g. to fix a typo).
+    _networkManuallySet = card != null;
     _cardType = card?.cardType ?? CardType.credit;
     _colorArgb = card?.colorArgb ?? _presetColors.first;
     _isCustomColor = card != null && !_presetColors.contains(card.colorArgb);
@@ -107,6 +122,7 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
   }
 
   void _onNumberChanged() {
+    if (_networkManuallySet) return;
     final detected = CardNetworkDetector.detect(_numberController.text);
     if (detected != _network) {
       setState(() => _network = detected);
@@ -271,6 +287,7 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
           if (_isEditing)
             IconButton(
               icon: const Icon(Icons.delete_outline),
+              color: Theme.of(context).colorScheme.error,
               onPressed: _delete,
             ),
         ],
@@ -311,16 +328,11 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
             const SizedBox(height: 20),
             TextFormField(
               controller: _numberController,
-              decoration: InputDecoration(
-                labelText: 'Card number',
-                suffixText: _network == CardNetwork.unknown
-                    ? null
-                    : _network.displayName,
-              ),
+              decoration: const InputDecoration(labelText: 'Card number'),
               keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              inputFormatters: [CardNumberInputFormatter()],
               validator: (v) {
-                final digits = v ?? '';
+                final digits = (v ?? '').replaceAll(RegExp(r'\D'), '');
                 if (!LuhnValidator.isValid(digits)) {
                   return 'Enter a valid card number';
                 }
@@ -332,6 +344,50 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
                 }
                 return null;
               },
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Network',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const InfoTooltipIcon(
+                      message:
+                          'Auto-detected from the card number. Some '
+                          'networks (like RuPay cards issued on JCB\'s '
+                          'range) can look identical from the number '
+                          'alone — pick the right one here if it\'s wrong.',
+                    ),
+                  ],
+                ),
+                DropdownButton<CardNetwork>(
+                  borderRadius: BorderRadius.circular(16),
+                  value: _network,
+                  items: CardNetwork.values
+                      .map(
+                        (n) => DropdownMenuItem(
+                          value: n,
+                          child: Text(n.displayName),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (n) {
+                    if (n == null) return;
+                    ref.read(hapticsServiceProvider).selectionClick();
+                    setState(() {
+                      _network = n;
+                      _networkManuallySet = true;
+                    });
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 20),
             Row(
@@ -609,15 +665,7 @@ class _SectionLabel extends StatelessWidget {
               children: [
                 Text(text, style: style),
                 const SizedBox(width: 4),
-                Tooltip(
-                  message: tooltip!,
-                  triggerMode: TooltipTriggerMode.tap,
-                  child: Icon(
-                    Icons.help_outline_rounded,
-                    size: 16,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
+                InfoTooltipIcon(message: tooltip!),
               ],
             ),
     );

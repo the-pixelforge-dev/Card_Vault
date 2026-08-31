@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/cards/card_list_provider.dart';
 import '../../../application/settings/haptics_provider.dart';
+import '../../../application/settings/settings_provider.dart';
+import '../../../core/cards/card_stack_style.dart';
 import '../../../domain/card/card_entity.dart';
 import '../../widgets_shared/digital_card_widget.dart';
 import 'hollow_card_empty_state.dart';
@@ -167,6 +169,12 @@ class _CardStackViewState extends ConsumerState<CardStackView>
   @override
   Widget build(BuildContext context) {
     final order = _effectiveOrder;
+    final cardStackStyle = ref.watch(
+      settingsProvider.select((s) => s.cardStackDepthStyle),
+    );
+    final depthScaleStep = cardStackStyle == CardStackDepthStyle.uniform
+        ? 0.0
+        : _depthScaleStep;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -231,7 +239,7 @@ class _CardStackViewState extends ConsumerState<CardStackView>
               depth: depth,
               width: cardWidth,
               depthOffset: _depthOffset,
-              depthScaleStep: _depthScaleStep,
+              depthScaleStep: depthScaleStep,
               isFront: depth == 0,
               onTap: isBrowseOwner ? () => _onTapFront(card) : null,
               onBrowseDragStart:
@@ -256,10 +264,16 @@ class _CardStackViewState extends ConsumerState<CardStackView>
             _StackCard(
               key: ValueKey(ownerCard.id),
               card: ownerCard,
-              depth: browseOwnerDepth,
+              // Parked right at the edge of the visible window rather than
+              // its real (possibly much deeper) depth, so a long riffle
+              // through many cards doesn't send it sailing far off past the
+              // back of the stack only to have to fly all the way back once
+              // it cycles back into view — it just waits at the boundary
+              // and picks up smoothly from there.
+              depth: visibleCount,
               width: cardWidth,
               depthOffset: _depthOffset,
-              depthScaleStep: _depthScaleStep,
+              depthScaleStep: depthScaleStep,
               isFront: false,
               onBrowseDragStart: () => _onBrowseDragStart(ownerCard.id),
               onBrowseDragUpdate: _onBrowseDragUpdate,
@@ -281,7 +295,7 @@ class _CardStackViewState extends ConsumerState<CardStackView>
               depth: depth,
               width: cardWidth,
               depthOffset: _depthOffset,
-              depthScaleStep: _depthScaleStep,
+              depthScaleStep: depthScaleStep,
               isFront: true,
               dragOffset: _dragDelta,
               onLongPressStart: () {},
@@ -293,7 +307,12 @@ class _CardStackViewState extends ConsumerState<CardStackView>
 
         return SizedBox(
           height: stackHeight,
+          // The front card's glow is meant to bleed upward past the top of
+          // the stack — the default hard clip cut it off right at this
+          // box's edge. Nothing else here needs clipping (this Stack isn't
+          // inside a scrollable), so it's safe to just turn it off.
           child: Stack(
+            clipBehavior: Clip.none,
             alignment: Alignment.topCenter,
             children: children,
           ),
@@ -337,15 +356,23 @@ class _StackCard extends StatelessWidget {
   final void Function(Offset delta) onLongPressMove;
   final VoidCallback onLongPressEnd;
 
+  /// Boosts the front card's glow so it visibly dominates right at its own
+  /// edge, then tapers off for each card further back so their colors still
+  /// bleed through and merge underneath rather than competing head-on.
+  static double _glowStrengthForDepth(int depth) {
+    if (depth <= 0) return 1.3;
+    return (1.0 - depth * 0.15).clamp(0.4, 1.0);
+  }
+
   @override
   Widget build(BuildContext context) {
     // depth can exceed the normally-visible window for a card that's kept
     // mounted purely to preserve an in-progress gesture (see
-    // _browsingCardId in _CardStackViewState) — clamp so opacity/scale
-    // never leave Flutter's valid [0, 1] range for those off-screen frames.
+    // _browsingCardId in _CardStackViewState) — clamp so scale never
+    // leaves Flutter's valid [0, 1] range for those off-screen frames.
     final scale = (1 - depth * depthScaleStep).clamp(0.0, 1.0);
-    final opacity = (1 - depth * 0.08).clamp(0.0, 1.0);
     final top = depth * depthOffset + dragOffset.dy;
+    final glowStrength = isFront ? 1.3 : _glowStrengthForDepth(depth);
 
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 260),
@@ -355,27 +382,20 @@ class _StackCard extends StatelessWidget {
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeOutCubic,
         scale: scale,
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 200),
-          opacity: opacity,
-          child: GestureDetector(
-            onTap: onTap,
-            onVerticalDragStart: onBrowseDragStart != null
-                ? (_) => onBrowseDragStart!()
-                : null,
-            onVerticalDragUpdate: onBrowseDragUpdate,
-            onVerticalDragEnd: onBrowseDragEnd,
-            onLongPressStart: (_) => onLongPressStart(),
-            onLongPressMoveUpdate: (details) =>
-                onLongPressMove(details.offsetFromOrigin),
-            onLongPressEnd: (_) => onLongPressEnd(),
-            child: SizedBox(
-              width: width,
-              child: Hero(
-                tag: 'card-${card.id}',
-                child: DigitalCardFront(card: card),
-              ),
-            ),
+        child: GestureDetector(
+          onTap: onTap,
+          onVerticalDragStart: onBrowseDragStart != null
+              ? (_) => onBrowseDragStart!()
+              : null,
+          onVerticalDragUpdate: onBrowseDragUpdate,
+          onVerticalDragEnd: onBrowseDragEnd,
+          onLongPressStart: (_) => onLongPressStart(),
+          onLongPressMoveUpdate: (details) =>
+              onLongPressMove(details.offsetFromOrigin),
+          onLongPressEnd: (_) => onLongPressEnd(),
+          child: SizedBox(
+            width: width,
+            child: DigitalCardFront(card: card, glowStrength: glowStrength),
           ),
         ),
       ),

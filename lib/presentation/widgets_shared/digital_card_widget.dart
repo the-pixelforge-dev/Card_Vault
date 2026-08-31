@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/settings/settings_provider.dart';
 import '../../domain/card/card_entity.dart';
 import '../card_detail/widgets/masked_field_reveal.dart';
 import 'card_visual_style.dart';
@@ -11,15 +13,29 @@ const cardAspectRatio = 1.586;
 /// The gradient/artwork shell shared by every rendering of a card — the
 /// stack, the list, and both faces of the flip detail view all wrap this so
 /// a card looks identical everywhere it appears.
-class DigitalCardShell extends StatelessWidget {
-  const DigitalCardShell({super.key, required this.card, required this.child});
+class DigitalCardShell extends ConsumerWidget {
+  const DigitalCardShell({
+    super.key,
+    required this.card,
+    required this.child,
+    this.glowStrength = 1.0,
+  });
 
   final CardEntity card;
   final Widget child;
 
+  /// Scales the glow's reach and opacity relative to the user's base
+  /// intensity setting. Used in the home stack so the topmost card's glow
+  /// visibly dominates right at its own edge while cards further back taper
+  /// off, rather than every layer competing at equal strength.
+  final double glowStrength;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final style = CardVisualStyle(card.colorArgb);
+    final glow =
+        ref.watch(settingsProvider.select((s) => s.cardStackGlowIntensity)) *
+        glowStrength;
 
     return AspectRatio(
       aspectRatio: cardAspectRatio,
@@ -28,17 +44,36 @@ class DigitalCardShell extends StatelessWidget {
           gradient: style.gradient,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
+            // Tight, vivid ring hugging the card's own edge so the border
+            // reads as this card's color first, before anything further
+            // out blends with the layers behind it.
             BoxShadow(
-              color: style.baseColor.withValues(alpha: 0.35),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
+              color: style.baseColor.withValues(alpha: 0.55 * glow),
+              blurRadius: 18 * glow,
+              spreadRadius: 1 * glow,
+            ),
+            BoxShadow(
+              color: style.baseColor.withValues(alpha: 0.65 * glow),
+              blurRadius: 48 * glow,
+              spreadRadius: 2 * glow,
+              offset: Offset(0, 14 * glow),
+            ),
+            BoxShadow(
+              color: style.baseColor.withValues(alpha: 0.4 * glow),
+              blurRadius: 72 * glow,
+              spreadRadius: -6 * glow,
             ),
           ],
         ),
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: DefaultTextStyle(
-            style: TextStyle(color: style.onColor),
+          child: DefaultTextStyle.merge(
+            // Explicit `none` guards against an underline ever leaking in
+            // from an inherited style.
+            style: TextStyle(
+              color: style.onColor,
+              decoration: TextDecoration.none,
+            ),
             child: child,
           ),
         ),
@@ -50,9 +85,10 @@ class DigitalCardShell extends StatelessWidget {
 /// Front face: card design, network, issuer, and nickname — no sensitive
 /// data ever appears here.
 class DigitalCardFront extends StatelessWidget {
-  const DigitalCardFront({super.key, required this.card});
+  const DigitalCardFront({super.key, required this.card, this.glowStrength = 1.0});
 
   final CardEntity card;
+  final double glowStrength;
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +96,7 @@ class DigitalCardFront extends StatelessWidget {
 
     return DigitalCardShell(
       card: card,
+      glowStrength: glowStrength,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

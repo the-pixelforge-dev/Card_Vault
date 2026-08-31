@@ -18,6 +18,9 @@ class AppSettingsHiveModel extends HiveObject {
     this.defaultCardholderName,
     this.hapticsEnabled = true,
     this.hapticsStrength = 'medium',
+    this.cardStackDepthStyle = 'shrink',
+    this.cardStackGlowIntensity = 1.0,
+    this.defaultStackFilter = 'all',
   }) : importedFonts = importedFonts ?? [];
 
   /// One of 'system', 'light', 'dark'.
@@ -61,4 +64,17 @@ class AppSettingsHiveModel extends HiveObject {
   /// One of 'low', 'medium', 'high'.
   @HiveField(10)
   String hapticsStrength;
+
+  /// One of 'shrink', 'uniform'.
+  @HiveField(11)
+  String cardStackDepthStyle;
+
+  /// 0.0 (no glow) to 1.0 (full glow), in steps of 0.1.
+  @HiveField(12)
+  double cardStackGlowIntensity;
+
+  /// One of 'all', 'credit', 'debit' — the card type filter the home
+  /// screen's stack and group dropdown start on.
+  @HiveField(13)
+  String defaultStackFilter;
 }

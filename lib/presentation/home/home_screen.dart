@@ -9,7 +9,9 @@ import '../ai_advisor/advisor_screen.dart';
 import '../card_detail/card_detail_screen.dart';
 import '../card_form/card_form_screen.dart';
 import '../settings/settings_screen.dart';
+import '../widgets_shared/zoom_fade_route.dart';
 import 'widgets/card_search_bar.dart';
+import 'widgets/card_stack_sort_button.dart';
 import 'widgets/card_stack_view.dart';
 import 'widgets/group_filter_dropdown.dart';
 
@@ -17,9 +19,9 @@ class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   void _openCard(BuildContext context, CardEntity card) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => CardDetailScreen(cardId: card.id)),
-    );
+    Navigator.of(
+      context,
+    ).push(zoomFadeRoute((_) => CardDetailScreen(cardId: card.id)));
   }
 
   @override
@@ -32,7 +34,14 @@ class HomeScreen extends ConsumerWidget {
         (activeFilter.searchQuery ?? '').trim().isNotEmpty;
 
     return Scaffold(
+      // Matches the card detail screen: a transparent app bar with the
+      // body extended behind it, so the front card's glow can bleed all
+      // the way up into the banner instead of being clipped right below
+      // it.
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         title: const Text('Card Vault'),
         actions: [
           if (hasGeminiKey)
@@ -60,12 +69,19 @@ class HomeScreen extends ConsumerWidget {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: EdgeInsets.fromLTRB(
+              12,
+              MediaQuery.of(context).padding.top + kToolbarHeight + 8,
+              12,
+              0,
+            ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const GroupFilterDropdown(),
-                const CardSearchBar(),
+                const Expanded(child: GroupFilterDropdown()),
+                const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [CardStackSortButton(), CardSearchBar()],
+                ),
               ],
             ),
           ),

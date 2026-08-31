@@ -14,10 +14,25 @@ class CardList extends _$CardList {
   }
 
   /// Throws [CardValidationException] if [card] is missing a required
-  /// field — the one place every save (the form, and encrypted import) is
-  /// forced through, so an incomplete card can never reach storage.
+  /// field, or if its number matches another saved card — the one place
+  /// every save (the form, and encrypted import) is forced through, so an
+  /// incomplete or duplicate card can never reach storage.
   Future<void> upsert(CardEntity card) async {
     CardValidator.ensureValid(card);
+
+    final digits = card.cardNumber.replaceAll(RegExp(r'\D'), '');
+    final existing = ref.read(cardRepositoryProvider).getAll();
+    final isDuplicate = existing.any(
+      (c) =>
+          c.id != card.id &&
+          c.cardNumber.replaceAll(RegExp(r'\D'), '') == digits,
+    );
+    if (isDuplicate) {
+      throw const CardValidationException([
+        'A card with this number already exists.',
+      ]);
+    }
+
     await ref.read(cardRepositoryProvider).save(card);
     _reload();
   }

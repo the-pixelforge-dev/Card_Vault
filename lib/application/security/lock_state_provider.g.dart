@@ -234,7 +234,7 @@ final class AppLockProvider extends $NotifierProvider<AppLock, bool> {
   }
 }
 
-String _$appLockHash() => r'e3a22991abf2866ffc5650a6da04f0ce9daad0e2';
+String _$appLockHash() => r'ea47c6a07f9118f4207948990feaa76d56b347a8';
 
 /// Whether the app-wide lock overlay should currently be shown.
 ///

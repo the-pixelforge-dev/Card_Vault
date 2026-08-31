@@ -52,7 +52,7 @@ class _CardSearchBarState extends ConsumerState<CardSearchBar> {
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
           isDense: true,
-          hintText: 'Search by card name',
+          hintText: 'Search',
           prefixIcon: const Icon(Icons.search_rounded, size: 20),
           suffixIcon: IconButton(
             icon: const Icon(Icons.close_rounded, size: 20),
