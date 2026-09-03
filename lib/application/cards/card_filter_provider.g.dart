@@ -41,7 +41,7 @@ final class ActiveCardFilterProvider
   }
 }
 
-String _$activeCardFilterHash() => r'9386a14a7eaa64c33e3bc08f74b42a4442a1c995';
+String _$activeCardFilterHash() => r'926ef62a09f6e0a4f6d5ccb8935303e639b04a92';
 
 abstract class _$ActiveCardFilter extends $Notifier<CardFilter> {
   CardFilter build();

@@ -33,13 +33,20 @@ class AppSettingsHiveModelAdapter extends TypeAdapter<AppSettingsHiveModel> {
           ? 1.0
           : (fields[12] as num).toDouble(),
       defaultStackFilter: fields[13] == null ? 'all' : fields[13] as String,
+      cardStackVisibleCount: fields[14] == null
+          ? 5
+          : (fields[14] as num).toInt(),
+      currency: fields[15] == null ? 'usd' : fields[15] as String,
+      cardInfoExpandedByDefault: fields[16] == null
+          ? false
+          : fields[16] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettingsHiveModel obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(17)
       ..writeByte(0)
       ..write(obj.themeMode)
       ..writeByte(1)
@@ -67,7 +74,13 @@ class AppSettingsHiveModelAdapter extends TypeAdapter<AppSettingsHiveModel> {
       ..writeByte(12)
       ..write(obj.cardStackGlowIntensity)
       ..writeByte(13)
-      ..write(obj.defaultStackFilter);
+      ..write(obj.defaultStackFilter)
+      ..writeByte(14)
+      ..write(obj.cardStackVisibleCount)
+      ..writeByte(15)
+      ..write(obj.currency)
+      ..writeByte(16)
+      ..write(obj.cardInfoExpandedByDefault);
   }
 
   @override

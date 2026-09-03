@@ -15,6 +15,9 @@ class CardEntity {
     required this.nickname,
     required this.colorArgb,
     this.artworkImagePath,
+    this.cardVariant = '',
+    this.creditLimit,
+    this.pin = '',
     this.rewardsText = '',
     this.bestForText = '',
     this.rewardsUrl,
@@ -40,6 +43,9 @@ class CardEntity {
   final String nickname;
   final int colorArgb;
   final String? artworkImagePath;
+  final String cardVariant;
+  final double? creditLimit;
+  final String pin;
   final String rewardsText;
   final String bestForText;
   final String? rewardsUrl;
@@ -73,6 +79,9 @@ class CardEntity {
     String? nickname,
     int? colorArgb,
     String? artworkImagePath,
+    String? cardVariant,
+    double? creditLimit,
+    String? pin,
     String? rewardsText,
     String? bestForText,
     String? rewardsUrl,
@@ -97,6 +106,9 @@ class CardEntity {
       nickname: nickname ?? this.nickname,
       colorArgb: colorArgb ?? this.colorArgb,
       artworkImagePath: artworkImagePath ?? this.artworkImagePath,
+      cardVariant: cardVariant ?? this.cardVariant,
+      creditLimit: creditLimit ?? this.creditLimit,
+      pin: pin ?? this.pin,
       rewardsText: rewardsText ?? this.rewardsText,
       bestForText: bestForText ?? this.bestForText,
       rewardsUrl: rewardsUrl ?? this.rewardsUrl,

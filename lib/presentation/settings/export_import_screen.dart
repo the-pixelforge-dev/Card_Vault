@@ -13,6 +13,7 @@ import '../../application/settings/settings_provider.dart';
 import '../../application/settings/settings_state.dart';
 import '../../core/cards/card_stack_style.dart';
 import '../../core/haptics/haptics_service.dart';
+import '../../core/settings/app_currency.dart';
 import '../../core/security/crypto/export_cipher.dart';
 import '../../data/settings/imported_font_hive_model.dart';
 import '../../domain/card/card_entity.dart';
@@ -46,6 +47,9 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
     'nickname': c.nickname,
     'colorArgb': c.colorArgb,
     'artworkImagePath': c.artworkImagePath,
+    'cardVariant': c.cardVariant,
+    'creditLimit': c.creditLimit,
+    'pin': c.pin,
     'rewardsText': c.rewardsText,
     'bestForText': c.bestForText,
     'rewardsUrl': c.rewardsUrl,
@@ -72,6 +76,9 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
     nickname: j['nickname'] as String,
     colorArgb: j['colorArgb'] as int,
     artworkImagePath: j['artworkImagePath'] as String?,
+    cardVariant: j['cardVariant'] as String? ?? '',
+    creditLimit: (j['creditLimit'] as num?)?.toDouble(),
+    pin: j['pin'] as String? ?? '',
     rewardsText: j['rewardsText'] as String? ?? '',
     bestForText: j['bestForText'] as String? ?? '',
     rewardsUrl: j['rewardsUrl'] as String?,
@@ -103,7 +110,7 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
   );
 
   // App Lock (on/off, biometric unlock, auto-lock timeout) is deliberately
-  // left out here — see restoreBackedUpSettings for why — as is the Gemini
+  // left out here — see restoreBackedUpSettings for why — as is the Groq
   // API key, which never lives in this settings store at all.
   Map<String, Object?> _settingsToJson(SettingsState s) => {
     'themeMode': s.themeMode.name,
@@ -125,6 +132,9 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
     'cardStackDepthStyle': s.cardStackDepthStyle.name,
     'cardStackGlowIntensity': s.cardStackGlowIntensity,
     'defaultStackFilter': s.defaultStackFilter.name,
+    'cardStackVisibleCount': s.cardStackVisibleCount,
+    'currency': s.currency.name,
+    'cardInfoExpandedByDefault': s.cardInfoExpandedByDefault,
   };
 
   Future<void> _applySettingsJson(Map<String, Object?> j) async {
@@ -165,6 +175,15 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
             j['defaultStackFilter'] as String? ??
                 current.defaultStackFilter.name,
           ),
+          cardStackVisibleCount:
+              (j['cardStackVisibleCount'] as num?)?.toInt() ??
+              current.cardStackVisibleCount,
+          currency: AppCurrency.values.byName(
+            j['currency'] as String? ?? current.currency.name,
+          ),
+          cardInfoExpandedByDefault:
+              j['cardInfoExpandedByDefault'] as bool? ??
+              current.cardInfoExpandedByDefault,
         );
   }
 
@@ -381,7 +400,7 @@ class _ExportImportScreenState extends ConsumerState<ExportImportScreen> {
             'protected by a passphrase you choose. It includes your cards, '
             'groups, and app settings (theme, font, haptics, card stack '
             'style, and more). It never leaves this device unless you move '
-            'it yourself. Your Gemini API key and App Lock settings (PIN, '
+            'it yourself. Your Groq API key and App Lock settings (PIN, '
             'biometrics, auto-lock) stay local to this device and are '
             'never included.',
             style: Theme.of(context).textTheme.bodyMedium,

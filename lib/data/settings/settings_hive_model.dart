@@ -21,6 +21,9 @@ class AppSettingsHiveModel extends HiveObject {
     this.cardStackDepthStyle = 'shrink',
     this.cardStackGlowIntensity = 1.0,
     this.defaultStackFilter = 'all',
+    this.cardStackVisibleCount = 5,
+    this.currency = 'usd',
+    this.cardInfoExpandedByDefault = false,
   }) : importedFonts = importedFonts ?? [];
 
   /// One of 'system', 'light', 'dark'.
@@ -77,4 +80,17 @@ class AppSettingsHiveModel extends HiveObject {
   /// screen's stack and group dropdown start on.
   @HiveField(13)
   String defaultStackFilter;
+
+  /// How many cards deep the home screen stack renders at once, 2-5.
+  @HiveField(14)
+  int cardStackVisibleCount;
+
+  /// Stored as [AppCurrency.name] (see core/settings/app_currency.dart).
+  @HiveField(15)
+  String currency;
+
+  /// Whether the card detail screen's merged "Info" section (Rewards, Best
+  /// For, Notes) starts expanded or collapsed.
+  @HiveField(16)
+  bool cardInfoExpandedByDefault;
 }

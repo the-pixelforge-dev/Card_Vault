@@ -16,6 +16,9 @@ class CardHiveModel extends HiveObject {
     required this.nickname,
     required this.colorArgb,
     this.artworkImagePath,
+    this.cardVariant = '',
+    this.creditLimit,
+    this.pin = '',
     this.rewardsText = '',
     this.bestForText = '',
     this.rewardsUrl,
@@ -101,4 +104,13 @@ class CardHiveModel extends HiveObject {
   /// Stored as [CardType.name] (see domain/card/card_type.dart).
   @HiveField(22)
   String cardType;
+
+  @HiveField(23)
+  String cardVariant;
+
+  @HiveField(24)
+  double? creditLimit;
+
+  @HiveField(25)
+  String pin;
 }

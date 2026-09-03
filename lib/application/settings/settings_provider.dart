@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/cards/card_stack_style.dart';
 import '../../core/haptics/haptics_service.dart';
+import '../../core/settings/app_currency.dart';
 import '../../data/settings/imported_font_hive_model.dart';
 import '../core_providers.dart';
 import 'settings_state.dart';
@@ -59,6 +60,15 @@ class Settings extends _$Settings {
   Future<void> setDefaultStackFilter(DefaultCardStackFilter filter) =>
       _persist(state.copyWith(defaultStackFilter: filter));
 
+  Future<void> setCardStackVisibleCount(int count) =>
+      _persist(state.copyWith(cardStackVisibleCount: count));
+
+  Future<void> setCurrency(AppCurrency currency) =>
+      _persist(state.copyWith(currency: currency));
+
+  Future<void> setCardInfoExpandedByDefault(bool expanded) =>
+      _persist(state.copyWith(cardInfoExpandedByDefault: expanded));
+
   Future<void> setActiveFontFamily(String? fontFamily) =>
       _persist(state.copyWith(activeFontFamily: () => fontFamily));
 
@@ -99,6 +109,9 @@ class Settings extends _$Settings {
     required CardStackDepthStyle cardStackDepthStyle,
     required double cardStackGlowIntensity,
     required DefaultCardStackFilter defaultStackFilter,
+    required int cardStackVisibleCount,
+    required AppCurrency currency,
+    required bool cardInfoExpandedByDefault,
   }) => _persist(
     state.copyWith(
       themeMode: themeMode,
@@ -112,6 +125,9 @@ class Settings extends _$Settings {
       cardStackDepthStyle: cardStackDepthStyle,
       cardStackGlowIntensity: cardStackGlowIntensity,
       defaultStackFilter: defaultStackFilter,
+      cardStackVisibleCount: cardStackVisibleCount,
+      currency: currency,
+      cardInfoExpandedByDefault: cardInfoExpandedByDefault,
     ),
   );
 }

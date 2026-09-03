@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/cards/card_stack_style.dart';
 import '../../core/haptics/haptics_service.dart';
+import '../../core/settings/app_currency.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/settings/imported_font_hive_model.dart';
 import '../../data/settings/settings_hive_model.dart';
@@ -23,6 +24,9 @@ class SettingsState {
     required this.cardStackDepthStyle,
     required this.cardStackGlowIntensity,
     required this.defaultStackFilter,
+    required this.cardStackVisibleCount,
+    required this.currency,
+    required this.cardInfoExpandedByDefault,
   });
 
   factory SettingsState.fromHiveModel(AppSettingsHiveModel m) {
@@ -45,6 +49,9 @@ class SettingsState {
       defaultStackFilter: DefaultCardStackFilter.values.byName(
         m.defaultStackFilter,
       ),
+      cardStackVisibleCount: m.cardStackVisibleCount,
+      currency: AppCurrency.values.byName(m.currency),
+      cardInfoExpandedByDefault: m.cardInfoExpandedByDefault,
     );
   }
 
@@ -62,6 +69,9 @@ class SettingsState {
   final CardStackDepthStyle cardStackDepthStyle;
   final double cardStackGlowIntensity;
   final DefaultCardStackFilter defaultStackFilter;
+  final int cardStackVisibleCount;
+  final AppCurrency currency;
+  final bool cardInfoExpandedByDefault;
 
   /// The display name shown in Settings for the active font — the bundled
   /// family name itself, or the human-readable name of an imported font
@@ -90,6 +100,9 @@ class SettingsState {
     cardStackDepthStyle: cardStackDepthStyle.name,
     cardStackGlowIntensity: cardStackGlowIntensity,
     defaultStackFilter: defaultStackFilter.name,
+    cardStackVisibleCount: cardStackVisibleCount,
+    currency: currency.name,
+    cardInfoExpandedByDefault: cardInfoExpandedByDefault,
   );
 
   SettingsState copyWith({
@@ -107,6 +120,9 @@ class SettingsState {
     CardStackDepthStyle? cardStackDepthStyle,
     double? cardStackGlowIntensity,
     DefaultCardStackFilter? defaultStackFilter,
+    int? cardStackVisibleCount,
+    AppCurrency? currency,
+    bool? cardInfoExpandedByDefault,
   }) {
     return SettingsState(
       themeMode: themeMode ?? this.themeMode,
@@ -132,6 +148,11 @@ class SettingsState {
       cardStackGlowIntensity:
           cardStackGlowIntensity ?? this.cardStackGlowIntensity,
       defaultStackFilter: defaultStackFilter ?? this.defaultStackFilter,
+      cardStackVisibleCount:
+          cardStackVisibleCount ?? this.cardStackVisibleCount,
+      currency: currency ?? this.currency,
+      cardInfoExpandedByDefault:
+          cardInfoExpandedByDefault ?? this.cardInfoExpandedByDefault,
     );
   }
 }

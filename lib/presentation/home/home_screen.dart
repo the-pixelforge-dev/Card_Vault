@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/ai_advisor/gemini_advisor_provider.dart';
 import '../../application/cards/card_filter_provider.dart';
 import '../../application/settings/haptics_provider.dart';
 import '../../domain/card/card_entity.dart';
-import '../ai_advisor/advisor_screen.dart';
+import '../card_sense/card_sense_screen.dart';
 import '../card_detail/card_detail_screen.dart';
 import '../card_form/card_form_screen.dart';
 import '../settings/settings_screen.dart';
@@ -27,7 +26,6 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cards = ref.watch(filteredCardListProvider);
-    final hasGeminiKey = ref.watch(geminiApiKeyProvider).value != null;
     final activeFilter = ref.watch(activeCardFilterProvider);
     final isFiltered =
         activeFilter.mode != GroupingMode.all ||
@@ -44,17 +42,6 @@ class HomeScreen extends ConsumerWidget {
         surfaceTintColor: Colors.transparent,
         title: const Text('Card Vault'),
         actions: [
-          if (hasGeminiKey)
-            IconButton(
-              icon: const Icon(Icons.auto_awesome_outlined),
-              tooltip: 'Which card should I use?',
-              onPressed: () {
-                ref.read(hapticsServiceProvider).selectionClick();
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const AdvisorScreen()),
-                );
-              },
-            ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {
@@ -97,15 +84,39 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          ref.read(hapticsServiceProvider).selectionClick();
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const CardFormScreen()),
-          );
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Add Card'),
+      floatingActionButton: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            heroTag: 'addCardFab',
+            tooltip: 'Add Card',
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            onPressed: () {
+              ref.read(hapticsServiceProvider).selectionClick();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CardFormScreen()),
+              );
+            },
+            child: const Icon(Icons.add),
+          ),
+          const SizedBox(width: 12),
+          FloatingActionButton(
+            heroTag: 'cardSenseFab',
+            tooltip: 'Card Sense',
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            onPressed: () {
+              ref.read(hapticsServiceProvider).selectionClick();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CardSenseScreen()),
+              );
+            },
+            child: const Icon(Icons.auto_awesome_outlined),
+          ),
+        ],
       ),
     );
   }

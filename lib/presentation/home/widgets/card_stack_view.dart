@@ -39,7 +39,6 @@ class CardStackView extends ConsumerStatefulWidget {
 
 class _CardStackViewState extends ConsumerState<CardStackView>
     with SingleTickerProviderStateMixin {
-  static const _maxVisible = 5;
   static const _depthOffset = 16.0;
   static const _depthScaleStep = 0.045;
 
@@ -95,9 +94,9 @@ class _CardStackViewState extends ConsumerState<CardStackView>
   void _onBrowseDragUpdate(DragUpdateDetails details) {
     if (widget.cards.length < 2) return;
 
-    // Dragging up cycles forward (front card moves to the back); dragging
-    // down cycles backward (brings the previous card back to front).
-    _cycleAccumulator += -details.delta.dy;
+    // Dragging down cycles forward through the defined order (front card
+    // moves to the back); dragging up cycles backward (reverses it).
+    _cycleAccumulator += details.delta.dy;
 
     while (_cycleAccumulator >= _cyclePixelsPerCard) {
       _cycleAccumulator -= _cyclePixelsPerCard;
@@ -172,6 +171,9 @@ class _CardStackViewState extends ConsumerState<CardStackView>
     final cardStackStyle = ref.watch(
       settingsProvider.select((s) => s.cardStackDepthStyle),
     );
+    final maxVisible = ref.watch(
+      settingsProvider.select((s) => s.cardStackVisibleCount),
+    );
     final depthScaleStep = cardStackStyle == CardStackDepthStyle.uniform
         ? 0.0
         : _depthScaleStep;
@@ -181,7 +183,7 @@ class _CardStackViewState extends ConsumerState<CardStackView>
         final cardWidth = constraints.maxWidth * 0.86;
         final cardHeight = cardWidth / cardAspectRatio;
         final stackHeight =
-            cardHeight + (_maxVisible - 1) * _depthOffset + 24;
+            cardHeight + (maxVisible - 1) * _depthOffset + 24;
 
         if (order.isEmpty) {
           if (widget.isFiltered) {
@@ -217,7 +219,7 @@ class _CardStackViewState extends ConsumerState<CardStackView>
           );
         }
 
-        final visibleCount = order.length.clamp(0, _maxVisible);
+        final visibleCount = order.length.clamp(0, maxVisible);
 
         // Defaults to the current front card when no browse gesture is
         // active; while one is active, stays pinned to whichever card

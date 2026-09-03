@@ -16,6 +16,7 @@ import '../../domain/card/cvv_validator.dart';
 import '../../domain/card/expiry_validator.dart';
 import '../../domain/card/luhn_validator.dart';
 import '../widgets_shared/card_visual_style.dart';
+import '../widgets_shared/full_text_editor_screen.dart';
 import '../widgets_shared/info_tooltip_icon.dart';
 import 'card_number_input_formatter.dart';
 import 'expiry_input_formatter.dart';
@@ -55,6 +56,9 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
   late final TextEditingController _cvvController;
   late final TextEditingController _issuerController;
   late final TextEditingController _nicknameController;
+  late final TextEditingController _cardVariantController;
+  late final TextEditingController _creditLimitController;
+  late final TextEditingController _pinController;
   late final TextEditingController _rewardsController;
   late final TextEditingController _bestForController;
   late final TextEditingController _rewardsUrlController;
@@ -94,6 +98,13 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
     _cvvController = TextEditingController(text: card?.cvv);
     _issuerController = TextEditingController(text: card?.issuerName);
     _nicknameController = TextEditingController(text: card?.nickname);
+    _cardVariantController = TextEditingController(text: card?.cardVariant);
+    _creditLimitController = TextEditingController(
+      text: card?.creditLimit == null
+          ? null
+          : _formatCreditLimit(card!.creditLimit!),
+    );
+    _pinController = TextEditingController(text: card?.pin);
     _rewardsController = TextEditingController(text: card?.rewardsText);
     _bestForController = TextEditingController(text: card?.bestForText);
     _rewardsUrlController = TextEditingController(text: card?.rewardsUrl);
@@ -121,6 +132,10 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
     _numberController.addListener(_onNumberChanged);
   }
 
+  String _formatCreditLimit(double value) => value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toString();
+
   void _onNumberChanged() {
     if (_networkManuallySet) return;
     final detected = CardNetworkDetector.detect(_numberController.text);
@@ -137,6 +152,9 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
     _cvvController.dispose();
     _issuerController.dispose();
     _nicknameController.dispose();
+    _cardVariantController.dispose();
+    _creditLimitController.dispose();
+    _pinController.dispose();
     _rewardsController.dispose();
     _bestForController.dispose();
     _rewardsUrlController.dispose();
@@ -173,6 +191,9 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
       cardType: _cardType,
       nickname: _nicknameController.text.trim(),
       colorArgb: _colorArgb,
+      cardVariant: _cardVariantController.text.trim(),
+      creditLimit: double.tryParse(_creditLimitController.text.trim()),
+      pin: _pinController.text.trim(),
       rewardsText: _rewardsController.text.trim(),
       bestForText: _bestForController.text.trim(),
       rewardsUrl: _emptyToNull(_rewardsUrlController.text),
@@ -239,6 +260,22 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
   String? _emptyToNull(String value) =>
       value.trim().isEmpty ? null : value.trim();
 
+  Future<void> _expandField(
+    TextEditingController controller,
+    String title,
+  ) async {
+    ref.read(hapticsServiceProvider).selectionClick();
+    final result = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => FullTextEditorScreen(
+          title: title,
+          initialText: controller.text,
+        ),
+      ),
+    );
+    if (result != null) controller.text = result;
+  }
+
   Future<void> _pickCustomColor() async {
     ref.read(hapticsServiceProvider).selectionClick();
     var pickedColor = Color(_colorArgb);
@@ -279,6 +316,7 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
   @override
   Widget build(BuildContext context) {
     final groups = ref.watch(groupListProvider);
+    final currency = ref.watch(settingsProvider).currency;
 
     return Scaffold(
       appBar: AppBar(
@@ -437,6 +475,48 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Required' : null,
             ),
+            const SizedBox(height: 20),
+            TextFormField(
+              controller: _cardVariantController,
+              decoration: const InputDecoration(
+                labelText: 'Card Variant',
+                hintText: 'e.g. Platinum, Signature, World Elite',
+                helperText: 'Optional',
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _creditLimitController,
+                    decoration: InputDecoration(
+                      labelText: 'Credit Limit',
+                      prefixText: '${currency.symbol} ',
+                      helperText: 'Optional',
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _pinController,
+                    decoration: const InputDecoration(
+                      labelText: 'PIN',
+                      helperText: 'Optional',
+                    ),
+                    keyboardType: TextInputType.number,
+                    obscureText: true,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 32),
             _SectionLabel('Appearance'),
             Wrap(
@@ -500,22 +580,22 @@ class _CardFormScreenState extends ConsumerState<CardFormScreen> {
             _MiniPreview(colorArgb: _colorArgb),
             const SizedBox(height: 32),
             _SectionLabel('Rewards & Notes'),
-            TextFormField(
+            _ExpandableFormField(
               controller: _rewardsController,
-              decoration: const InputDecoration(labelText: 'Rewards'),
-              maxLines: 2,
+              label: 'Rewards',
+              onExpand: () => _expandField(_rewardsController, 'Rewards'),
             ),
             const SizedBox(height: 20),
-            TextFormField(
+            _ExpandableFormField(
               controller: _bestForController,
-              decoration: const InputDecoration(labelText: 'Best for'),
-              maxLines: 2,
+              label: 'Best for',
+              onExpand: () => _expandField(_bestForController, 'Best For'),
             ),
             const SizedBox(height: 20),
-            TextFormField(
+            _ExpandableFormField(
               controller: _notesController,
-              decoration: const InputDecoration(labelText: 'Notes'),
-              maxLines: 4,
+              label: 'Notes',
+              onExpand: () => _expandField(_notesController, 'Notes'),
             ),
             const SizedBox(height: 32),
             _SectionLabel('Links'),
@@ -668,6 +748,48 @@ class _SectionLabel extends StatelessWidget {
                 InfoTooltipIcon(message: tooltip!),
               ],
             ),
+    );
+  }
+}
+
+/// A multi-line [TextFormField] with a small "expand" button pinned to its
+/// bottom-right corner, opening [FullTextEditorScreen] for more room to
+/// write, paste, or review a long entry.
+class _ExpandableFormField extends StatelessWidget {
+  const _ExpandableFormField({
+    required this.controller,
+    required this.label,
+    required this.onExpand,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final VoidCallback onExpand;
+
+  static const _maxLines = 5;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: label,
+            alignLabelWithHint: true,
+          ),
+          maxLines: _maxLines,
+        ),
+        Positioned(
+          right: 4,
+          bottom: 4,
+          child: IconButton(
+            icon: const Icon(Icons.open_in_full, size: 18),
+            tooltip: 'Expand',
+            onPressed: onExpand,
+          ),
+        ),
+      ],
     );
   }
 }

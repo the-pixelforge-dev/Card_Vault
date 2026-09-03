@@ -183,6 +183,13 @@ class DigitalCardBack extends StatelessWidget {
             realValue: card.expiryMonthYear,
             onColor: style.onColor,
           ),
+          if (card.pin.isNotEmpty)
+            MaskedFieldReveal(
+              label: 'PIN',
+              maskedValue: '•' * card.pin.length,
+              realValue: card.pin,
+              onColor: style.onColor,
+            ),
         ],
       ),
     );

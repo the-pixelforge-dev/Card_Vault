@@ -7,8 +7,9 @@ import '../../application/settings/haptics_provider.dart';
 import '../../application/settings/settings_provider.dart';
 import '../../core/cards/card_stack_style.dart';
 import '../../core/haptics/haptics_service.dart';
+import '../../core/settings/app_currency.dart';
 import '../../core/theme/app_theme.dart';
-import '../ai_advisor/advisor_settings_screen.dart';
+import '../card_sense/card_sense_settings_screen.dart';
 import '../groups/groups_screen.dart';
 import '../lock/set_pin_screen.dart';
 import '../lock/verify_pin_screen.dart';
@@ -48,6 +49,22 @@ class SettingsScreen extends ConsumerWidget {
       MaterialPageRoute(builder: (_) => VerifyPinScreen(reason: reason)),
     );
     return confirmed == true;
+  }
+
+  void _pickCurrency(BuildContext context, WidgetRef ref) {
+    _tap(ref);
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => _CurrencyPickerSheet(
+        selected: ref.read(settingsProvider).currency,
+        onSelect: (currency) {
+          _tap(ref);
+          ref.read(settingsProvider.notifier).setCurrency(currency);
+          Navigator.of(sheetContext).pop();
+        },
+      ),
+    );
   }
 
   Future<void> _toggleAppLock(
@@ -489,12 +506,67 @@ class SettingsScreen extends ConsumerWidget {
                   onChanged: notifier.setCardStackGlowIntensity,
                 ),
               ),
+              ListTile(
+                leading: const Icon(Icons.filter_none),
+                title: const Text('Visible Cards'),
+                subtitle: Slider(
+                  value: settings.cardStackVisibleCount.toDouble(),
+                  min: 2,
+                  max: 5,
+                  divisions: 3,
+                  label: '${settings.cardStackVisibleCount}',
+                  onChanged: (v) {
+                    _tap(ref);
+                    notifier.setCardStackVisibleCount(v.round());
+                  },
+                ),
+              ),
             ],
           ),
           _SettingsSection(
             title: 'Card Defaults',
             icon: Icons.badge_outlined,
-            children: const [DefaultCardholderNameField()],
+            children: [
+              const DefaultCardholderNameField(),
+              ListTile(
+                leading: const Icon(Icons.currency_exchange_outlined),
+                title: const Text('Currency'),
+                trailing: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () => _pickCurrency(context, ref),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 6,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          settings.currency.code,
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.expand_more_rounded),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              SwitchListTile(
+                secondary: const Icon(Icons.info_outline),
+                title: const Text('Expand Info by Default'),
+                subtitle: const Text(
+                  'Rewards, Best For, and Notes on the card screen',
+                ),
+                value: settings.cardInfoExpandedByDefault,
+                onChanged: (v) {
+                  _tap(ref);
+                  notifier.setCardInfoExpandedByDefault(v);
+                },
+              ),
+            ],
           ),
           _SettingsSection(
             title: 'Organization',
@@ -538,7 +610,7 @@ class SettingsScreen extends ConsumerWidget {
             children: [
               ListTile(
                 leading: const Icon(Icons.vpn_key_outlined),
-                title: const Text('Gemini API Key'),
+                title: const Text('Groq API Key'),
                 subtitle: const Text(
                   'Optional — off by default, no cloud sync',
                 ),
@@ -547,7 +619,7 @@ class SettingsScreen extends ConsumerWidget {
                   _tap(ref);
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const AdvisorSettingsScreen(),
+                      builder: (_) => const CardSenseSettingsScreen(),
                     ),
                   );
                 },
@@ -603,6 +675,35 @@ class _SettingsSection extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CurrencyPickerSheet extends StatelessWidget {
+  const _CurrencyPickerSheet({required this.selected, required this.onSelect});
+
+  final AppCurrency selected;
+  final void Function(AppCurrency currency) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: ListView(
+        shrinkWrap: true,
+        children: AppCurrency.values.map((c) {
+          final isSelected = c == selected;
+          return ListTile(
+            title: Text(c.displayName),
+            trailing: isSelected
+                ? Icon(
+                    Icons.check,
+                    color: Theme.of(context).colorScheme.primary,
+                  )
+                : null,
+            onTap: () => onSelect(c),
+          );
+        }).toList(),
       ),
     );
   }
