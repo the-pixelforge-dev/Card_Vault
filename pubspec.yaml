@@ -1,5 +1,5 @@
 name: card_vault
-description: "A new Flutter project."
+description: "An offline-first vault for your credit and debit card details, with an optional AI advisor that picks the best card for a purchase."
 publish_to: 'none'
 version: 0.1.0+1
 

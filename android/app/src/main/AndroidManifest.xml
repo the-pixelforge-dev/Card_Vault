@@ -1,12 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Used only for the optional AI purchase advisor, and only when the
-         user supplies their own Gemini API key. The app never makes any
-         other network call. -->
+    <!-- Used only for the optional Card Sense purchase advisor, and only
+         when the user supplies their own Groq API key. The app never makes
+         any other network call. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:label="Card Vault"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Card Vault holds card numbers and other financial detail, so none of its
+  data may leave the device by any automatic route. Two separate channels
+  exist on Android 12+ and both are excluded here:
+
+    cloud-backup    - Android's automatic upload to the user's Google Drive.
+    device-transfer - the copy made when setting up a new phone.
+
+  Beyond the privacy argument, an automatic copy would not even work: the
+  encryption keys live in the hardware-backed Android Keystore and are not
+  included in either channel, so a restored vault would be unreadable.
+  Moving to a new device is done deliberately through the app's own
+  encrypted export/import instead.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>
